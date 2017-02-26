@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Net;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LibHitomi
 {
@@ -16,14 +17,21 @@ namespace LibHitomi
         {
             HttpWebRequest wreq = RequestHelper.CreateRequest(DownloadOptions.ImageSubdomain, $"/galleries/{galleryId}.js");
             string responseText;
+            List<string> urls = new List<string>();
+            // request
             using (Stream str = wreq.GetResponse().GetResponseStream())
             using (StreamReader sr = new StreamReader(str))
                 responseText = sr.ReadToEnd();
-            System.Diagnostics.Debug.WriteLine(responseText);
-            responseText = responseText.Substring("var galleryinfo = [".Length);
-            responseText = responseText.Substring(0, responseText.Length - 1);
-            System.Diagnostics.Debug.WriteLine(responseText);
-            return new string[] { string.Empty };
+            // cut
+            responseText = responseText.Substring("var galleryinfo = ".Length);
+            // parse
+            JArray arr = JArray.Parse(responseText);
+            foreach(JObject obj in arr)
+            {
+                // galleries/20267/kairakuten200608_001.jpg
+                urls.Add(RequestHelper.CreateUrl(DownloadOptions.ImageSubdomain, $"/galleries/{galleryId}/{obj["name"]}"));
+            }
+            return urls.ToArray();
         }
         public static string[] GetImageUrls(Gallery gallery)
         {
