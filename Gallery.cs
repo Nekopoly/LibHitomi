@@ -15,7 +15,7 @@ namespace LibHitomi
         // Static Members
         public static string[] GetImageUrls(int galleryId)
         {
-            HttpWebRequest wreq = RequestHelper.CreateRequest(DownloadOptions.ImageSubdomain, $"/galleries/{galleryId}.js");
+            HttpWebRequest wreq = RequestHelper.CreateRequest("", $"/galleries/{galleryId}.js");
             string responseText;
             List<string> urls = new List<string>();
             // request
@@ -44,6 +44,8 @@ namespace LibHitomi
         {
 
         }
+        [JsonProperty(PropertyName = "type")]
+        internal string type;
         [JsonProperty(PropertyName = "a")]
         internal string[] artists;
         [JsonProperty(PropertyName = "g")]
@@ -72,6 +74,11 @@ namespace LibHitomi
         public string[] Artists
         {
             get { return artists; }
+        }
+        [JsonIgnore()]
+        public string Type
+        {
+            get { return type; }
         }
         [JsonIgnore()]
         public string[] Groups
