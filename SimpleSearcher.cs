@@ -19,10 +19,14 @@ namespace LibHitomi
         /// <returns></returns>
         public Gallery[] Search(List<Gallery> galleries, string query)
         {
+            if (query.Trim().Length == 0)
+                return galleries.ToArray();
             string[] splitted = query.Trim().Split(' ');
             List<Gallery> result = new List<Gallery>(galleries);
             foreach (string i in splitted)
             {
+                if (!i.Contains(':'))
+                    continue;
                 string ns = i.Split(':')[0].ToLower();
                 string match = i.Split(':')[1].ToLower().Replace('_', ' ');
 
