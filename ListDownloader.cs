@@ -31,7 +31,19 @@ namespace LibHitomi
         /// <summary>
         /// 조각들을 다 받고 마무리 작업이 시작할 때 발생합니다. data 매개변수는 전달되지 않습니다.
         /// </summary>
-        FinishingStarted
+        FinishingStarted,
+        /// <summary>
+        /// 수동추가할 갤러리들을 불러들이기 시작할 때 발생합니다. data 매개변수는 전달되지 않습니다.
+        /// </summary>
+        LoadingExtraGalleries,
+        /// <summary>
+        /// 갤러리들이 수동추가될 때 발생합니다. data 매개변수는 전달되지 않습니다.
+        /// </summary>
+        LoadedExtraGalleries,
+        /// <summary>
+        /// 수동추가할 갤러리가 없을 때 발생합니다. data 매개변수는 전달되지 않습니다.
+        /// </summary>
+        HasNoExtraGalleries,
     }
     /// <summary>
     /// 갤러리 목록 전체를 다운로드합니다.
@@ -74,6 +86,17 @@ namespace LibHitomi
                 return result;
             }
         }
+        private Gallery[] loadExtraGalleries()
+        {
+            using (FileStream fstr = new FileStream(ExtraGalleriesPath, FileMode.Open, FileAccess.Read))
+            using (StreamReader sre = new StreamReader(fstr))
+            using (JsonReader reader = new JsonTextReader(sre))
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                Gallery[] result = serializer.Deserialize<Gallery[]>(reader);
+                return result;
+            }
+        }
         private void finishChunksJob(object uselessparameter)
         {
             if (chunks.Count != chunkCnt)
@@ -87,6 +110,17 @@ namespace LibHitomi
             for (var i = 0; i < chunkCnt; i++)
             {
                 list.AddRange(chunks[i]);
+            }
+            Debug.WriteLine("Every chunks were added into list");
+            if(LoadExtraGalleries)
+            {
+                Debug.WriteLine("Loading extra galleries");
+                ListDownloadProgress(ListDownloadProgressType.LoadingExtraGalleries, null);
+                list.AddRange(loadExtraGalleries());
+                ListDownloadProgress(ListDownloadProgressType.LoadedExtraGalleries, null);
+            } else
+            {
+                ListDownloadProgress(ListDownloadProgressType.HasNoExtraGalleries, null);
             }
             Debug.WriteLine("Made a list");
             for (var i = 0; i < list.Count; i++)
@@ -131,6 +165,14 @@ namespace LibHitomi
         /// 다운로드시 사용할 쓰레드 갯수입니다.
         /// </summary>
         public int ThreadCount { get; set; } = 4;
+        /// <summary>
+        /// 추가적으로 갤러리들을 파일에서 불러올지의 여부입니다.
+        /// </summary>
+        public bool LoadExtraGalleries { get; set; } = false;
+        /// <summary>
+        /// 추가적으로 추가할 갤러리 파일의 경로입니다.
+        /// </summary>
+        public string ExtraGalleriesPath { get; set; } = "";
         /// <summary>
         /// 갤러리 목록 다운로드를 시작합니다. 여러개의 쓰레드를 사용하며 완료시 이벤트를 발생시킵니다.
         /// </summary>
