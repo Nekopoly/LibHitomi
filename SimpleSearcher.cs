@@ -27,8 +27,14 @@ namespace LibHitomi
             {
                 if (!i.Contains(':'))
                     continue;
+                bool isExclusion = false;
                 string ns = i.Split(':')[0].ToLower();
                 string match = i.Split(':')[1].ToLower().Replace('_', ' ');
+                if(ns.StartsWith("-"))
+                {
+                    isExclusion = true;
+                    ns = ns.Substring(1);
+                }
 
                 if (ns == "tag" || ns == "male" || ns == "female")
                     ns = "Tags";
@@ -58,17 +64,21 @@ namespace LibHitomi
                         foreach (string j in values)
                         {
                             if (j.ToLower() == match.ToLower())
-                                return true;
+                                return !isExclusion;
                         }
-                        return false;
+                        return isExclusion;
                     }
                     else if (ns == "Name")
                     {
                         string name = gallery.Name.ToLower();
-                        return name.Contains(match.ToLower());
+                        bool matched = name.Contains(match.ToLower());
+                        if (isExclusion) matched = !matched;
+                        return matched;
                     } else if (ns == "Language" || ns == "Type")
                     {
-                        return (string)gallery.GetType().GetProperty(ns).GetValue(gallery) == match.ToLower();
+                        bool matched = (string)gallery.GetType().GetProperty(ns).GetValue(gallery) == match.ToLower();
+                        if (isExclusion) matched = !matched;
+                        return matched;
                     } else
                     {
                         throw new Exception("알 수 없는 네임스페이스입니다");
