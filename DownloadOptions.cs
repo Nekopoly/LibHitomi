@@ -20,6 +20,10 @@ namespace LibHitomi
         /// 이미지 주소를 생성할 때 사용할 서브도메인입니다
         /// </summary>
         public static string ImageSubdomain { get; set; } = "a";
+        /// <summary>
+        /// 썸네일 주소를 생성할 때 사용할 서브도메인입니다
+        /// </summary>
+        public static string ThumbnailSubdomain { get; set; } = "btn";
     }
     internal static class RequestHelper
     {

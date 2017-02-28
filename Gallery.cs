@@ -34,7 +34,7 @@ namespace LibHitomi
         
         public static string[] GetThumbnailUrls(int galleryId)
             => getImageNumbs(galleryId)
-            .Select(n => RequestHelper.CreateUrl(DownloadOptions.ImageSubdomain, $"/smalltn/{galleryId}/{n}.jpg")).ToArray();
+            .Select(n => RequestHelper.CreateUrl(DownloadOptions.ThumbnailSubdomain, $"/smalltn/{galleryId}/{n}.jpg")).ToArray();
 
         public static string[] GetImageUrls(Gallery gallery)
         {
