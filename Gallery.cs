@@ -13,7 +13,7 @@ namespace LibHitomi
     public class Gallery
     {
         // Static Members
-        public static string[] GetImageUrls(int galleryId)
+        private static string[] getImageNumbs(int galleryId)
         {
             HttpWebRequest wreq = RequestHelper.CreateRequest("", $"/galleries/{galleryId}.js");
             string responseText;
@@ -26,13 +26,16 @@ namespace LibHitomi
             responseText = responseText.Substring("var galleryinfo = ".Length);
             // parse
             JArray arr = JArray.Parse(responseText);
-            foreach(JObject obj in arr)
-            {
-                // galleries/20267/kairakuten200608_001.jpg
-                urls.Add(RequestHelper.CreateUrl(DownloadOptions.ImageSubdomain, $"/galleries/{galleryId}/{obj["name"]}"));
-            }
-            return urls.ToArray();
+            return JArray.Parse(responseText).Select(obj => obj["name"].ToString()).ToArray();
         }
+        public static string[] GetImageUrls(int galleryId)
+            => getImageNumbs(galleryId)
+            .Select(n => RequestHelper.CreateUrl(DownloadOptions.ImageSubdomain, $"/galleries/{galleryId}/{n}")).ToArray();
+        
+        public static string[] GetThumbnailUrls(int galleryId)
+            => getImageNumbs(galleryId)
+            .Select(n => RequestHelper.CreateUrl(DownloadOptions.ImageSubdomain, $"/smalltn/{galleryId}/{n}.jpg")).ToArray();
+
         public static string[] GetImageUrls(Gallery gallery)
         {
             return GetImageUrls(gallery.Id);
@@ -65,9 +68,11 @@ namespace LibHitomi
 
         // Public methods
         public string[] getImageUrls()
-        {
-            return GetImageUrls(this.id);
-        }
+            => GetImageUrls(this.id);
+
+        public string[] getThumbnailUrls()
+            => GetThumbnailUrls(this.id);
+        
 
         // Public members
         [JsonIgnore()]
