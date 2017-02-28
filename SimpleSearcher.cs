@@ -36,7 +36,13 @@ namespace LibHitomi
                     ns = ns.Substring(1);
                 }
 
-                if (ns == "tag" || ns == "male" || ns == "female")
+
+                if (ns == "male" || ns == "female")
+                {
+                    match = ns + ":" + match;
+                    ns = "Tags";
+                }
+                else if (ns == "tag")
                     ns = "Tags";
                 else if (ns == "artist")
                     ns = "Artists";

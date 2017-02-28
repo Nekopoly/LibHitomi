@@ -49,6 +49,7 @@
     <Compile Include="Gallery.cs" />
     <Compile Include="ListDownloader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SearchSuggester.cs" />
     <Compile Include="SimpleSearcher.cs" />
   </ItemGroup>
   <ItemGroup>
