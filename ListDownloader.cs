@@ -131,6 +131,7 @@ namespace LibHitomi
                 if (list[i].parodies == null) list[i].parodies = new string[] { };
                 if (list[i].tags == null) list[i].tags = new string[] { };
                 if (list[i].language == null) list[i].language = "";
+                if (list[i].name == null) list[i].name = "";
             }
             Debug.WriteLine("Un-nulled! Completed and Finished!");
             ListDownloadCompleted(list);
