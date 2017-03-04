@@ -98,6 +98,7 @@ namespace LibHitomi
                 foreach (string i in namespaceMap.Keys)
                 {
                     suggests.Add(i + ":");
+                    suggests.Add("-" + i + ":");
                 }
                 return suggests.ToArray();
             }
@@ -110,7 +111,13 @@ namespace LibHitomi
                 {
                     string ns = lastThing.Split(':').First();
                     string match = lastThing.Split(':').Last();
+                    bool isExclusive = false;
 
+                    if (ns.StartsWith("-"))
+                    {
+                        isExclusive = true;
+                        ns = ns.Substring(1);
+                    }
                     if (!namespaceMap.ContainsKey(ns))
                         return new string[] { "(검색 제안 오류 : 무언가 잘못된 검색어입니다.)" };
                     string matchedProperty = namespaceMap[ns];
@@ -120,7 +127,7 @@ namespace LibHitomi
                     })).OrderBy((i) => { return i.ToLower().IndexOf(match.ToLower()); }).ToArray();
                     foreach (string i in simillarMatches)
                     {
-                        suggests.Add(withoutLastThing + (withoutLastThing == "" ? "" : " ") + ns + ":" + i);
+                        suggests.Add(withoutLastThing + (withoutLastThing == "" ? "" : " ") + (isExclusive ? "-" : "") + ns + ":" + i);
                     }
                     return suggests.ToArray();
                 }
@@ -129,6 +136,7 @@ namespace LibHitomi
                     foreach (string i in namespaceMap.Keys)
                     {
                         suggests.Add(withoutLastThing + " " + i + ":");
+                        suggests.Add(withoutLastThing + " -" + i + ":");
                     }
                 }
                 return suggests.ToArray();
