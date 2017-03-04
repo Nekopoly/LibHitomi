@@ -63,6 +63,10 @@ namespace LibHitomi
         internal string language;
         [JsonProperty(PropertyName = "n")]
         internal string name;
+        [JsonProperty(PropertyName = "videofilename")]
+        private string videoFilename;
+        [JsonProperty(PropertyName = "videogalleryid")]
+        private int videoGalleryId;
         [JsonProperty(PropertyName = "id")]
         internal int id;
 
@@ -72,7 +76,12 @@ namespace LibHitomi
 
         public string[] getThumbnailUrls()
             => GetThumbnailUrls(this.id);
-        
+
+        public string getDownloadableVideoUrl()
+            => RequestHelper.CreateUrl(DownloadOptions.ImageSubdomain, $"/videos/{this.videoFilename}");
+
+        public string getStreamingVideoUrl()
+            => RequestHelper.CreateUrl(DownloadOptions.VideoStreamingSubdomain, $"/videos/{this.videoFilename}");
 
         // Public members
         [JsonIgnore()]
@@ -114,6 +123,16 @@ namespace LibHitomi
         public string Name
         {
             get { return name; }
+        }
+        [JsonIgnore()]
+        public string VideoFilename
+        {
+            get { return videoFilename; }
+        }
+        [JsonIgnore()]
+        public int VideoGalleryId
+        {
+            get { return videoGalleryId; }
         }
         [JsonIgnore()]
         public int Id

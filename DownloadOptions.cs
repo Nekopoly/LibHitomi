@@ -24,6 +24,10 @@ namespace LibHitomi
         /// 썸네일 주소를 생성할 때 사용할 서브도메인입니다
         /// </summary>
         public static string ThumbnailSubdomain { get; set; } = "btn";
+        /// <summary>
+        /// 동영상 스트리밍 주소를 생성할 때 서용할 서브도메인입니다.
+        /// </summary>
+        public static string VideoStreamingSubdomain { get; set; } = "streaming";
     }
     internal static class RequestHelper
     {
