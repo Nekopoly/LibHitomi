@@ -23,6 +23,9 @@ namespace LibHitomi
                 return galleries.ToArray();
             string[] splitted = query.Trim().Split(' ');
             List<Gallery> result = new List<Gallery>(galleries);
+#if SupportLimitQuery
+            int limit = -1;
+#endif
             foreach (string i in splitted)
             {
                 if (!i.Contains(':'))
@@ -58,6 +61,12 @@ namespace LibHitomi
                     ns = "Name";
                 else if (ns == "type")
                     ns = "Type";
+#if SupportLimitQuery
+                else if (ns == "limit") {
+                    limit = int.Parse(match);
+                    continue;
+                }
+#endif
                 else
                     throw new Exception("읽을 수 없는 검색어입니다.");
 
@@ -91,6 +100,12 @@ namespace LibHitomi
                     }
                 }));
             }
+#if SupportLimitQuery
+            if (limit > 0)
+            {
+                result = new List<Gallery>(result.Take(limit));
+            }
+#endif
             return result.ToArray();
         }
     }

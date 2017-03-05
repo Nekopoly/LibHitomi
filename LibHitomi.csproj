@@ -17,7 +17,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;SupportLimitQuery</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
@@ -45,6 +45,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Downloader\AnimeDownloadJob.cs" />
+    <Compile Include="Downloader\Downloader.cs" />
+    <Compile Include="Downloader\IDownloadJob.cs" />
+    <Compile Include="Downloader\ImagesDownloadJob.cs" />
     <Compile Include="DownloadOptions.cs" />
     <Compile Include="Gallery.cs" />
     <Compile Include="ListDownloader.cs" />
