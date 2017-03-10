@@ -6,11 +6,16 @@ using System.Threading.Tasks;
 
 namespace LibHitomi
 {
+    public delegate List<Gallery> FromQueryCalledDelegate(string from, out bool success);
     /// <summary>
     /// 문자열 형태의 검색어를 받아 갤러리 중에서 특정 조건에 부합하는 갤러리를 찾아냅니다.
     /// </summary>
     public class SimpleSearcher
     {
+        /// <summary>
+        /// from 태그가 포함될 때 호출됩니다.
+        /// </summary>
+        public event FromQueryCalledDelegate FromQueryCalled;
         /// <summary>
         /// 검색을 수행합니다.
         /// </summary>
@@ -19,13 +24,15 @@ namespace LibHitomi
         /// <returns></returns>
         public Gallery[] Search(List<Gallery> galleries, string query)
         {
+            return search(galleries, query);
+        }
+        public Gallery[] search(List<Gallery> galleries, string query, string from = "")
+        {
             if (query.Trim().Length == 0)
                 return galleries.ToArray();
             string[] splitted = query.Trim().Split(' ');
             List<Gallery> result = new List<Gallery>(galleries);
-#if SupportLimitQuery
             int limit = -1;
-#endif
             foreach (string i in splitted)
             {
                 if (!i.Contains(':'))
@@ -61,12 +68,26 @@ namespace LibHitomi
                     ns = "Name";
                 else if (ns == "type")
                     ns = "Type";
-#if SupportLimitQuery
+                else if (ns == "from")
+                {
+                    bool success = false;
+                    if (FromQueryCalled == null)
+                    {
+                        continue;
+                    }
+                    List<Gallery> fromGalleries = FromQueryCalled(match, out success);
+                    if(success && match != from)
+                    {
+                        return search(fromGalleries, query, match);
+                    } else
+                    {
+                        continue;
+                    }
+                }
                 else if (ns == "limit") {
                     limit = int.Parse(match);
                     continue;
                 }
-#endif
                 else
                     throw new Exception("읽을 수 없는 검색어입니다.");
 
@@ -100,12 +121,10 @@ namespace LibHitomi
                     }
                 }));
             }
-#if SupportLimitQuery
             if (limit > 0)
             {
                 result = new List<Gallery>(result.Take(limit));
             }
-#endif
             return result.ToArray();
         }
     }

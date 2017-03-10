@@ -119,7 +119,7 @@ namespace LibHitomi
                         ns = ns.Substring(1);
                     }
                     if (!namespaceMap.ContainsKey(ns))
-                        return new string[] { "(검색 제안 오류 : 무언가 잘못된 검색어입니다.)" };
+                        return new string[] { };
                     string matchedProperty = namespaceMap[ns];
                     string[] simillarMatches = suggestions[matchedProperty].ToList().FindAll(new Predicate<string>((string i) =>
                     {
