@@ -31,6 +31,7 @@ namespace LibHitomi.Downloader
     {
         void Initialize(Gallery gallery, int imageLimit, string directory);
         void StartDownload();
+        int JobId { get; set; }
         bool IsStarted { get; }
         bool IsDownloading { get; }
         bool IsCompleted { get; }

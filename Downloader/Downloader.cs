@@ -4,17 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using LibHitomi.Downloader.EventArgs;
 
 namespace LibHitomi.Downloader
 {
-    public delegate void DownloadGalleryProgressDelegate(object sender, Gallery gallery, ProgressEventTypes evtType, object param);
-    public delegate void DownloadGalleryCompletedDelegate(object sender, Gallery gallery);
-    public delegate void DownloadEveryGalleriesCompletedDelegate(object sender);
+    [Obsolete("ContinuousDownloader 클래스를 사용하세요.")]
     public class Downloader
     {
-        public event DownloadGalleryCompletedDelegate DownloadGalleryCompleted;
-        public event DownloadGalleryProgressDelegate DownloadGalleryProgress;
-        public event DownloadEveryGalleriesCompletedDelegate DownloadEveryGalleriesCompleted;
+        public event GalleryDownloadCompletedDelegate DownloadGalleryCompleted;
+        public event GalleryDownloadProgressDelegate DownloadGalleryProgress;
+        public event EveryGalleriesDownloadCompletedDelegate DownloadEveryGalleriesCompleted;
         private List<Gallery> galleries = new List<Gallery>();
         private List<IDownloadJob> jobs = new List<IDownloadJob>();
         private int galleryLimit;
@@ -48,12 +47,12 @@ namespace LibHitomi.Downloader
 
         private void onGalleryDownloadProgress(object sender, ProgressEventTypes evtType, object param)
         {
-            DownloadGalleryProgress(this, (sender as IDownloadJob).Gallery, evtType, param);
+            DownloadGalleryProgress(this, new DownloadGalleryProgressEventArgs((sender as IDownloadJob).Gallery, evtType, param, (sender as IDownloadJob).JobId));
         }
 
         private void onGalleryDownloadCompleted(object sender)
         {
-            DownloadGalleryCompleted(this, (sender as IDownloadJob).Gallery);
+            DownloadGalleryCompleted(this, new DownloadGalleryCompeletedEventArgs((sender as IDownloadJob).Gallery, (sender as IDownloadJob).JobId));
             bool isEverytingCompleted = true;
             foreach (IDownloadJob job in jobs)
             {

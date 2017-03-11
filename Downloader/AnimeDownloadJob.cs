@@ -22,6 +22,7 @@ namespace LibHitomi.Downloader
         public bool IsCompleted { get { return isCompleted; } }
         public bool IsStarted { get { return isStarted; } }
         public bool IsDownloading { get { return isStarted && !isCompleted; } }
+        public int JobId { get; set; } = -1;
         // Events
         public event DownloadCompletedDelegate DownloadCompleted;
         public event DownloadProgressDelegate DownloadProgress;

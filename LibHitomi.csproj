@@ -51,8 +51,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Downloader\ContinuousDownloader.cs" />
     <Compile Include="Downloader\AnimeDownloadJob.cs" />
+    <Compile Include="Downloader\Delegates.cs" />
     <Compile Include="Downloader\Downloader.cs" />
+    <Compile Include="Downloader\EventArgs\GalleryAddedEventArgs.cs" />
+    <Compile Include="Downloader\EventArgs\DownloadGalleryCompeletedEventArgs.cs" />
+    <Compile Include="Downloader\EventArgs\DownloadGalleryProgressEventArgs.cs" />
+    <Compile Include="Downloader\EventArgs\GalleryDownloadStartedEventArgs.cs" />
     <Compile Include="Downloader\IDownloadJob.cs" />
     <Compile Include="Downloader\ImagesDownloadJob.cs" />
     <Compile Include="DownloadOptions.cs" />
@@ -66,9 +72,7 @@
     <None Include="HitomiSharp-SigningKey.snk" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="EventArgs\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
