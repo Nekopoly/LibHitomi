@@ -22,6 +22,7 @@ namespace LibHitomi.Downloader
         private Thread jobStarterThread;
         private int galleryLimit, imageLimit, maxJobId = 1;
         private string saveDirectory;
+        private bool isStarted = false;
 
         private void processJob(object _job)
         {
@@ -119,10 +120,18 @@ namespace LibHitomi.Downloader
         }
 
         /// <summary>
+        /// 이 다운로더가 시작됐는지의 여부입니다.
+        /// </summary>
+        public bool IsStarted { get { return isStarted; } }
+
+        /// <summary>
         /// 다운로드를 시작합니다.
         /// </summary>
         public void Start()
         {
+            if (isStarted)
+                return;
+            isStarted = true;
             if (!jobStarterThread.IsAlive)
                 jobStarterThread.Start();
         }
