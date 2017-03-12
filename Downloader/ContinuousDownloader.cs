@@ -57,6 +57,8 @@ namespace LibHitomi.Downloader
                 if (jobs.Count == 0)
                     continue;
                 IDownloadJob job = jobs.Dequeue();
+                if (job == null)
+                    continue;
                 System.Diagnostics.Debug.WriteLine("Setting jobid to " + maxJobId);
                 job.JobId = maxJobId++;
                 bool isThreadStarted = false;
