@@ -124,7 +124,7 @@ namespace LibHitomi
                     string[] simillarMatches = suggestions[matchedProperty].ToList().FindAll(new Predicate<string>((string i) =>
                     {
                         return i.ToLower().Contains(match.ToLower());
-                    })).OrderBy((i) => { return i.ToLower().IndexOf(match.ToLower()); }).ToArray();
+                    })).ToArray();
                     foreach (string i in simillarMatches)
                     {
                         suggests.Add(withoutLastThing + (withoutLastThing == "" ? "" : " ") + (isExclusive ? "-" : "") + ns + ":" + i);
