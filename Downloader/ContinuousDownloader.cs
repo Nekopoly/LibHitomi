@@ -104,23 +104,35 @@ namespace LibHitomi.Downloader
         /// <param name="gallery">추가할 갤러리입니다.</param>
         public void AddGallery(Gallery gallery)
         {
-            IDownloadJob job;
-            if (gallery.type == "anime")
+            AddGalleries(new Gallery[] { gallery });
+        }
+
+        /// <summary>
+        /// 다운로드할 갤러리들을 추가합니다.
+        /// </summary>
+        /// <param name="galleries">추가할 갤러리들입니다.</param>
+        public void AddGalleries(IEnumerable<Gallery> galleries)
+        {
+            GalleryAdded(this, galleries.ToArray());
+            foreach (Gallery gallery in galleries)
             {
-                job = new AnimeDownloadJob();
+                IDownloadJob job;
+                if (gallery.type == "anime")
+                {
+                    job = new AnimeDownloadJob();
+                }
+                else
+                {
+                    job = new ImagesDownloadJob();
+                }
+                string subdir = $"{gallery.Id} - {gallery.Name}";
+                foreach (char i in Path.GetInvalidPathChars().Concat(Path.GetInvalidFileNameChars()))
+                {
+                    subdir = subdir.Replace(i, '_');
+                }
+                job.Initialize(gallery, imageLimit, Path.Combine(saveDirectory, subdir));
+                jobs.Enqueue(job);
             }
-            else
-            {
-                job = new ImagesDownloadJob();
-            }
-            string subdir = $"{gallery.Id} - {gallery.Name}";
-            foreach(char i in Path.GetInvalidPathChars())
-            {
-                subdir = subdir.Replace(i, '_');
-            }
-            job.Initialize(gallery, imageLimit, Path.Combine(saveDirectory, subdir));
-            GalleryAdded(this, gallery);
-            jobs.Enqueue(job);
         }
 
         /// <summary>
