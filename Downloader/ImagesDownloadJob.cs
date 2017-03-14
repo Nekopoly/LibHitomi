@@ -72,9 +72,10 @@ namespace LibHitomi.Downloader
             }
             if (waitForOthers)
             {
-                while (notDownloadedImages != 0 || urls.Count != 0)
+                while (true)
                 {
-                    
+                    if (notDownloadedImages == 0 && urls.Count.Equals(0))
+                        break;
                 }
                 isCompleted = true;
                 DownloadCompleted(this);
