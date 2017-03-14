@@ -32,6 +32,7 @@ namespace LibHitomi.Downloader
         // Private methods
         private void downloadImageUrls()
         {
+            System.Threading.Thread.CurrentThread.Name = "Url Download Thread - " + gallery.Id;
             foreach (string i in gallery.getImageUrls())
                 urls.Enqueue(i);
             notDownloadedImages = urls.Count;
@@ -45,7 +46,8 @@ namespace LibHitomi.Downloader
         private void downloadImage(object _waitForOthers)
         {
             bool waitForOthers = (bool)_waitForOthers;
-            while(true)
+            System.Threading.Thread.CurrentThread.Name = "Image Download Thread " + (waitForOthers ? "(Sacred)" : "") + "- " + gallery.id;
+            while (true)
             {
                 if (urls.Count == 0)
                     break;
@@ -66,7 +68,7 @@ namespace LibHitomi.Downloader
                     str.CopyTo(fstr);
 
                 DownloadProgress(this, ProgressEventTypes.IncreaseProgressBar, null);
-                notDownloadedImages--;
+                Interlocked.Decrement(ref notDownloadedImages);
             }
             if (waitForOthers)
             {

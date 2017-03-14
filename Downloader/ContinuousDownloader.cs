@@ -35,7 +35,8 @@ namespace LibHitomi.Downloader
 
         private void startAnotherJobWhenFinished(object sender)
         {
-            processingJobs--;
+            System.Diagnostics.Debug.WriteLine("Job finished");
+            Interlocked.Decrement(ref processingJobs);
         }
 
         private void JobDownloadProgress(object sender, ProgressEventTypes evtType, object param)
@@ -62,15 +63,17 @@ namespace LibHitomi.Downloader
                     continue;
                 System.Diagnostics.Debug.WriteLine("Setting jobid to " + maxJobId);
                 job.JobId = maxJobId++;
-                bool jobExecuted = false;
-                while(!jobExecuted)
+                while(true)
                 {
+                    bool jobExecuted = false;
                     if(processingJobs < galleryLimit)
                     {
+                        System.Diagnostics.Debug.WriteLine("Starting another job.....");
                         startJob(job);
-                        processingJobs++;
+                        Interlocked.Increment(ref processingJobs);
                         jobExecuted = true;
                     }
+                    if (jobExecuted) break;
                 }
             }
         }
