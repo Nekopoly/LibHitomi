@@ -18,23 +18,24 @@ namespace LibHitomi.Downloader
         public event GalleryDownloadCompletedDelegate DownloadGalleryCompleted;
         public event GalleryDownloadStartedDelegate DownloadGalleryStarted;
         private Queue<IDownloadJob> jobs = new Queue<IDownloadJob>();
-        private Thread[] processJobThreads;
         private Thread jobStarterThread;
         private int galleryLimit, imageLimit;
         private string saveDirectory;
         private bool isStarted = false;
+        private int processingJobs = 0;
 
-        private void processJob(object _job)
+        private void startJob(IDownloadJob job)
         {
-            IDownloadJob job = _job as IDownloadJob;
+            job.DownloadCompleted += startAnotherJobWhenFinished;
             job.DownloadCompleted += JobDownloadCompleted;
             job.DownloadProgress += JobDownloadProgress;
             DownloadGalleryStarted(this, new EventArgs.GalleryDownloadStartedEventArgs(job.Gallery, job.JobId));
             job.StartDownload();
-            while(!job.IsCompleted)
-            {
+        }
 
-            }
+        private void startAnotherJobWhenFinished(object sender)
+        {
+            processingJobs--;
         }
 
         private void JobDownloadProgress(object sender, ProgressEventTypes evtType, object param)
@@ -49,7 +50,7 @@ namespace LibHitomi.Downloader
             DownloadGalleryCompleted(this, new EventArgs.DownloadGalleryCompeletedEventArgs(job.Gallery, job.JobId));
         }
 
-        private void startJob()
+        private void startJobs()
         {
             int maxJobId = 1;
             while (true)
@@ -61,24 +62,14 @@ namespace LibHitomi.Downloader
                     continue;
                 System.Diagnostics.Debug.WriteLine("Setting jobid to " + maxJobId);
                 job.JobId = maxJobId++;
-                bool isThreadStarted = false;
-                while (!isThreadStarted)
+                bool jobExecuted = false;
+                while(!jobExecuted)
                 {
-                    for (int i = 0; i < galleryLimit; i++)
+                    if(processingJobs < galleryLimit)
                     {
-                        if (processJobThreads[i] == null)
-                            processJobThreads[i] = new Thread(processJob);
-                        if (processJobThreads[i].IsAlive)
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            processJobThreads[i] = new Thread(processJob);
-                            processJobThreads[i].Start(job);
-                            isThreadStarted = true;
-                            break;
-                        }
+                        startJob(job);
+                        processingJobs++;
+                        jobExecuted = true;
                     }
                 }
             }
@@ -96,8 +87,7 @@ namespace LibHitomi.Downloader
             this.imageLimit = imageLimit;
             saveDirectory = directory;
 
-            jobStarterThread = new Thread(startJob);
-            processJobThreads = new Thread[galleryLimit];
+            jobStarterThread = new Thread(startJobs);
         }
 
         /// <summary>
