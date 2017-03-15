@@ -7,6 +7,7 @@ using System.Text;
 namespace LibHitomi
 {
     public delegate void InitializationCompletedDelegate();
+    public delegate void InitializationStartedDelegate();
     public delegate void autoCompleteSuggestedDelegate(string[] results);
     public class SearchSuggester
     {
@@ -37,6 +38,7 @@ namespace LibHitomi
         }
         private void init(object _galleries)
         {
+            InitializationStarted();
             string[] arrayProps = { "Artists", "Groups", "Parodies", "Tags", "Characters" };
             string[] nonArrayProps = { "Type", "Language", "Name" };
             string[] allProps = arrayProps.Concat(nonArrayProps).ToArray();
@@ -155,6 +157,7 @@ namespace LibHitomi
             string[] suggestions = suggest((string)query);
             Suggested(suggestions);
         }
+        public event InitializationStartedDelegate InitializationStarted;
         public event InitializationCompletedDelegate InitializaitonCompleted;
         public event autoCompleteSuggestedDelegate Suggested;
         public bool Initialized { get { return inited; } }
@@ -174,6 +177,7 @@ namespace LibHitomi
         }
         public SearchSuggester()
         {
+            InitializationStarted += () => { };
             InitializaitonCompleted += () => { };
             Suggested += (a) => { };
         }

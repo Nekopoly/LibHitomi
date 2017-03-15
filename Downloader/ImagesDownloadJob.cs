@@ -38,7 +38,7 @@ namespace LibHitomi.Downloader
             notDownloadedImages = urls.Count;
             DownloadProgress(this, ProgressEventTypes.SetProrgessBarMaximum, urls.Count);
             DownloadProgress(this, ProgressEventTypes.SetProgressBarValue, 0);
-            for(int i = 0; i < imageLimit; i++)
+            for (int i = 0; i < imageLimit; i++)
             {
                 threads[i].Start(i == 0);
             }
@@ -49,9 +49,13 @@ namespace LibHitomi.Downloader
             System.Threading.Thread.CurrentThread.Name = "Image Download Thread " + (waitForOthers ? "(Sacred)" : "") + "- " + gallery.id;
             while (true)
             {
-                if (urls.Count == 0)
-                    break;
-                string url = urls.Dequeue();
+                string url = null;
+                lock (urls)
+                {
+                    if (urls.Count == 0)
+                        break;
+                    url = urls.Dequeue();
+                }
                 if (url == null)
                     break;
                 if (!Directory.Exists(directoryPath))

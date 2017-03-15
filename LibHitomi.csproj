@@ -61,6 +61,8 @@
     <Compile Include="Downloader\EventArgs\GalleryDownloadStartedEventArgs.cs" />
     <Compile Include="Downloader\IDownloadJob.cs" />
     <Compile Include="Downloader\ImagesDownloadJob.cs" />
+    <Compile Include="Downloader\TriedDuplicatedGalleryException.cs" />
+    <Compile Include="Downloader\WhenDuplicatedGalleryRequested.cs" />
     <Compile Include="DownloadOptions.cs" />
     <Compile Include="Gallery.cs" />
     <Compile Include="ListDownloader.cs" />

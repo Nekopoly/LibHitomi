@@ -18,6 +18,7 @@ namespace LibHitomi.Downloader
         public event GalleryDownloadCompletedDelegate DownloadGalleryCompleted;
         public event GalleryDownloadStartedDelegate DownloadGalleryStarted;
         private Queue<IDownloadJob> jobs = new Queue<IDownloadJob>();
+        private HashSet<int> requestedJobIds = new HashSet<int>();
         private Thread jobStarterThread;
         private int galleryLimit, imageLimit;
         private string saveDirectory;
@@ -111,6 +112,19 @@ namespace LibHitomi.Downloader
             GalleryAdded(this, galleries.ToArray());
             foreach (Gallery gallery in galleries)
             {
+                if(requestedJobIds.Contains(gallery.Id))
+                {
+                    switch(WhenTriedDuplicatedGallery)
+                    {
+                        case WhenTriedDuplicatedGallery.IgnoreAndDoNotDownload:
+                            continue;
+                        case WhenTriedDuplicatedGallery.ThrowException:
+                            throw new TriedDuplicatedGalleryException(gallery);
+                    }
+                } else
+                {
+                    requestedJobIds.Add(gallery.Id);
+                }
                 IDownloadJob job;
                 if (gallery.type == "anime")
                 {
@@ -134,6 +148,11 @@ namespace LibHitomi.Downloader
         /// 이 다운로더가 시작됐는지의 여부입니다.
         /// </summary>
         public bool IsStarted { get { return isStarted; } }
+
+        /// <summary>
+        /// 이미 다운로드했거나, 진행중인 갤러리의 다운로드를 시도할때의 행동입니다.
+        /// </summary>
+        public WhenTriedDuplicatedGallery WhenTriedDuplicatedGallery { get; set; } = WhenTriedDuplicatedGallery.ThrowException;
 
         /// <summary>
         /// 다운로드를 시작합니다.
