@@ -11,14 +11,11 @@ namespace LibHitomi
     public class SearchSuggester
     {
         Dictionary<string, HashSet<string>> suggestions = new Dictionary<string, HashSet<string>>();
-        Dictionary<string, string> namespaceMap = null;
+        Dictionary<string, string> namespaceMap = new Dictionary<string, string>();
         bool inited = false;
-        static string[] arrayProps = { "Artists", "Groups", "Parodies", "Tags", "Characters" };
-        static string[] nonArrayProps = { "Type", "Language", "Name" };
-        static string[] allProps = arrayProps.Concat(nonArrayProps).ToArray();
         private void initNamespaceMap()
         {
-            if (namespaceMap == null)
+            if (namespaceMap.Count == 0)
             {
                 namespaceMap = new Dictionary<string, string>() {
                     { "male", "MaleTags" },
@@ -40,107 +37,118 @@ namespace LibHitomi
         }
         private void init(object _galleries)
         {
-            Gallery[] galleries = (Gallery[])_galleries;
-            initNamespaceMap();
-            suggestions.Clear();
-            foreach (string prop in allProps.Concat(new string[] { "FemaleTags", "MaleTags" }).ToArray())
-            {
-                suggestions[prop] = new HashSet<string>();
-            }
-            foreach (Gallery gallery in galleries)
-            {
-                foreach (string arrayProp in arrayProps)
+            string[] arrayProps = { "Artists", "Groups", "Parodies", "Tags", "Characters" };
+            string[] nonArrayProps = { "Type", "Language", "Name" };
+            string[] allProps = arrayProps.Concat(nonArrayProps).ToArray();
+            lock (suggestions)
+                lock (namespaceMap)
                 {
-                    string[] a = (string[])gallery.GetType().GetProperty(arrayProp).GetValue(gallery);
-                    if (arrayProp == "Tags")
+                    Gallery[] galleries = (Gallery[])_galleries;
+                    initNamespaceMap();
+                    suggestions.Clear();
+                    foreach (string prop in allProps.Concat(new string[] { "FemaleTags", "MaleTags" }).ToArray())
                     {
-                        // male, female 분리
-                        foreach (string i in a)
+                        suggestions[prop] = new HashSet<string>();
+                    }
+                    foreach (Gallery gallery in galleries)
+                    {
+                        foreach (string arrayProp in arrayProps)
                         {
-                            if (i.ToLower().StartsWith("female:"))
-                                suggestions["FemaleTags"].Add(i.ToLower().Substring("female:".Length).Replace(' ', '_'));
-                            else if (i.ToLower().StartsWith("male:"))
-                                suggestions["MaleTags"].Add(i.ToLower().Substring("male:".Length).Replace(' ', '_'));
+                            string[] a = (string[])gallery.GetType().GetProperty(arrayProp).GetValue(gallery);
+                            if (arrayProp == "Tags")
+                            {
+                                // male, female 분리
+                                foreach (string i in a)
+                                {
+                                    if (i.ToLower().StartsWith("female:"))
+                                        suggestions["FemaleTags"].Add(i.ToLower().Substring("female:".Length).Replace(' ', '_'));
+                                    else if (i.ToLower().StartsWith("male:"))
+                                        suggestions["MaleTags"].Add(i.ToLower().Substring("male:".Length).Replace(' ', '_'));
+                                    else
+                                        suggestions["Tags"].Add(i.ToLower().Replace(' ', '_'));
+                                }
+                            }
                             else
-                                suggestions["Tags"].Add(i.ToLower().Replace(' ', '_'));
+                            {
+                                foreach (string i in a)
+                                    suggestions[arrayProp].Add(i.Replace(' ', '_'));
+                            }
+                        }
+                        foreach (string nonArrayProp in nonArrayProps)
+                        {
+                            string a = (string)gallery.GetType().GetProperty(nonArrayProp).GetValue(gallery);
+                            suggestions[nonArrayProp].Add(a.Replace(' ', '_'));
                         }
                     }
-                    else
-                    {
-                        foreach (string i in a)
-                            suggestions[arrayProp].Add(i.Replace(' ', '_'));
-                    }
+                    inited = true;
                 }
-                foreach(string nonArrayProp in nonArrayProps)
-                {
-                    string a = (string)gallery.GetType().GetProperty(nonArrayProp).GetValue(gallery);
-                    suggestions[nonArrayProp].Add(a.Replace(' ', '_'));
-                }
-            }
-            inited = true;
             InitializaitonCompleted();
         }
         private string[] suggest(string query)
         {
-            if (!inited)
-                return new string[] { };
-            List<string> suggests = new List<string>();
-            if (query.EndsWith(" ") || query.Trim().Length == 0)
-            {
-                foreach (string i in namespaceMap.Keys)
+            lock(suggestions)
+                lock (namespaceMap)
                 {
-                    suggests.Add(query + i + ":");
-                }
-                return suggests.ToArray();
-            }
-            else if (!query.Contains(":"))
-            {
-                foreach (string i in namespaceMap.Keys)
-                {
-                    suggests.Add(i + ":");
-                    suggests.Add("-" + i + ":");
-                }
-                return suggests.ToArray();
-            }
-            else
-            {
-                string[] splitted = query.Split(' ');
-                string lastThing = splitted.Last();
-                string withoutLastThing = splitted.Length == 1 ? "" : string.Join(" ", splitted.Take(splitted.Length - 1).ToArray());
-                if (lastThing.Contains(":"))
-                {
-                    string ns = lastThing.Split(':').First();
-                    string match = lastThing.Split(':').Last();
-                    bool isExclusive = false;
-
-                    if (ns.StartsWith("-"))
-                    {
-                        isExclusive = true;
-                        ns = ns.Substring(1);
-                    }
-                    if (!namespaceMap.ContainsKey(ns))
+                    if (!inited)
                         return new string[] { };
-                    string matchedProperty = namespaceMap[ns];
-                    string[] simillarMatches = suggestions[matchedProperty].ToList().FindAll(new Predicate<string>((string i) =>
+                    List<string> suggests = new List<string>();
+                    if (query.EndsWith(" ") || query.Trim().Length == 0)
                     {
-                        return i.ToLower().Contains(match.ToLower());
-                    })).OrderBy((i) => { return i.ToLower().IndexOf(match.ToLower()); }).ToArray();
-                    foreach (string i in simillarMatches)
-                    {
-                        suggests.Add(withoutLastThing + (withoutLastThing == "" ? "" : " ") + (isExclusive ? "-" : "") + ns + ":" + i);
+                        foreach (string i in namespaceMap.Keys)
+                        {
+                            suggests.Add(query + i + ":");
+                        }
+                        return suggests.ToArray();
                     }
-                    return suggests.ToArray();
-                }
-                else
-                {
-                    foreach (string i in namespaceMap.Keys)
+                    else if (!query.Contains(":"))
                     {
-                        suggests.Add(withoutLastThing + " " + i + ":");
-                        suggests.Add(withoutLastThing + " -" + i + ":");
+                        foreach (string i in namespaceMap.Keys)
+                        {
+                            suggests.Add(i + ":");
+                            suggests.Add("-" + i + ":");
+                        }
+                        return suggests.ToArray();
+                    }
+                    else
+                    {
+                        string[] splitted = query.Split(' ');
+                        string lastThing = splitted.Last();
+                        string withoutLastThing = splitted.Length == 1 ? "" : string.Join(" ", splitted.Take(splitted.Length - 1).ToArray());
+                        if (lastThing.Contains(":"))
+                        {
+                            string ns = lastThing.Split(':').First();
+                            string match = lastThing.Split(':').Last();
+                            bool isExclusive = false;
+
+                            if (ns.StartsWith("-"))
+                            {
+                                isExclusive = true;
+                                ns = ns.Substring(1);
+                            }
+                            if (!namespaceMap.ContainsKey(ns))
+                                return new string[] { };
+                            string matchedProperty = namespaceMap[ns];
+                            string[] simillarMatches = suggestions[matchedProperty].ToList().FindAll(new Predicate<string>((string i) =>
+                            {
+                                return i.ToLower().Contains(match.ToLower());
+                            })).OrderBy((i) => { return i.ToLower().IndexOf(match.ToLower()); }).ToArray();
+                            foreach (string i in simillarMatches)
+                            {
+                                suggests.Add(withoutLastThing + (withoutLastThing == "" ? "" : " ") + (isExclusive ? "-" : "") + ns + ":" + i);
+                            }
+                            return suggests.ToArray();
+                        }
+                        else
+                        {
+                            foreach (string i in namespaceMap.Keys)
+                            {
+                                suggests.Add(withoutLastThing + " " + i + ":");
+                                suggests.Add(withoutLastThing + " -" + i + ":");
+                            }
+                        }
+                        return suggests.ToArray();
                     }
                 }
-                return suggests.ToArray();
-            }
         }
         private void suggestThread(object query)
         {
