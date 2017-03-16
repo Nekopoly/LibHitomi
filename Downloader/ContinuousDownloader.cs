@@ -17,6 +17,7 @@ namespace LibHitomi.Downloader
         public event GalleryDownloadProgressDelegate DownloadGalleryProgress;
         public event GalleryDownloadCompletedDelegate DownloadGalleryCompleted;
         public event GalleryDownloadStartedDelegate DownloadGalleryStarted;
+        public event GalleryIgnoredDelegate GalleryIgnored;
         private Queue<IDownloadJob> jobs = new Queue<IDownloadJob>();
         private HashSet<int> requestedJobIds = new HashSet<int>();
         private Thread jobStarterThread;
@@ -109,6 +110,7 @@ namespace LibHitomi.Downloader
         /// <param name="galleries">추가할 갤러리들입니다.</param>
         public void AddGalleries(IEnumerable<Gallery> galleries)
         {
+            List<Gallery> ignoredGalleries = new List<LibHitomi.Gallery>();
             GalleryAdded(this, galleries.ToArray());
             foreach (Gallery gallery in galleries)
             {
@@ -117,6 +119,7 @@ namespace LibHitomi.Downloader
                     switch(WhenTriedDuplicatedGallery)
                     {
                         case WhenTriedDuplicatedGallery.IgnoreAndDoNotDownload:
+                            ignoredGalleries.Add(gallery);
                             continue;
                         case WhenTriedDuplicatedGallery.ThrowException:
                             throw new TriedDuplicatedGalleryException(gallery);
@@ -140,7 +143,11 @@ namespace LibHitomi.Downloader
                     subdir = subdir.Replace(i, '_');
                 }
                 job.Initialize(gallery, imageLimit, Path.Combine(saveDirectory, subdir));
-                jobs.Enqueue(job);
+                jobs.Enqueue(job);   
+            }
+            if (ignoredGalleries.Count > 0)
+            {
+                GalleryIgnored(this, ignoredGalleries.ToArray());
             }
         }
 
