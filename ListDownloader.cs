@@ -8,6 +8,7 @@ using System.Threading;
 using System.IO;
 using System.Net;
 using Newtonsoft.Json;
+using System.Xml;
 using Debug = System.Diagnostics.Debug;
 
 namespace LibHitomi
@@ -123,17 +124,11 @@ namespace LibHitomi
                 ListDownloadProgress(ListDownloadProgressType.HasNoExtraGalleries, null);
             }
             Debug.WriteLine("Made a list");
-            for (var i = 0; i < list.Count; i++)
+            for(int i = 0; i < list.Count; i++)
             {
-                if (list[i].artists == null) list[i].artists = new string[] { };
-                if (list[i].characters == null) list[i].characters = new string[] { };
-                if (list[i].groups == null) list[i].groups = new string[] { };
-                if (list[i].parodies == null) list[i].parodies = new string[] { };
-                if (list[i].tags == null) list[i].tags = new string[] { };
-                if (list[i].language == null) list[i].language = "";
-                if (list[i].name == null) list[i].name = "";
+                list[i].UnNull();
             }
-            Debug.WriteLine("Un-nulled! Completed and Finished!");
+            Debug.WriteLine("Unnulled, Completed and Finished!");
             ListDownloadCompleted(list);
         }
         private void downloadChunkJob(object uselessparameter)
@@ -175,6 +170,31 @@ namespace LibHitomi
         /// </summary>
         public string ExtraGalleriesPath { get; set; } = "";
         /// <summary>
+        /// RSS를 읽어 가장 최근에 올라온 갤러리의 작품 ID를 반환합니다.
+        /// </summary>
+        /// <returns></returns>
+        public static int GetLatestGalleryID()
+        {
+            Regex regex = new Regex("https://hitomi\\.la/galleries/([0-9]+).html", RegexOptions.Compiled);
+            HttpWebRequest wreq = RequestHelper.CreateRequest("", "/index-all.atom");
+            using (WebResponse wres = wreq.GetResponse())
+            using (Stream str = wres.GetResponseStream())
+            using (XmlReader xmlReader = XmlReader.Create(str))
+            {
+                bool isEntry = false, isIdNode = false;
+                while (xmlReader.Read())
+                {
+                    if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == "entry")
+                        isEntry = true;
+                    else if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == "id" && isEntry)
+                        isIdNode = true;
+                    else if (xmlReader.NodeType == XmlNodeType.Text && isIdNode)
+                        return int.Parse(regex.Match(xmlReader.Value).Groups[1].Value);
+                }
+            }
+            throw new NotImplementedException();
+        }
+        /// <summary>
         /// 갤러리 목록 다운로드를 시작합니다. 여러개의 쓰레드를 사용하며 완료시 이벤트를 발생시킵니다.
         /// </summary>
         /// <param name="throwErrorIfAlreadyDownloading">이미 다운로드하고 있을 시 오류를 반환할 지의 여부입니다.</param>
@@ -205,6 +225,7 @@ namespace LibHitomi
         /// 여러개의 쓰레드를 사용하지 않고 갤러리 목록을 다운로드합니다. 느리고 권장되지 않습니다.
         /// </summary>
         /// <returns>갤러리 목록</returns>
+        [Obsolete("StartDownload 메소드를 사용해주세요.")]
         public List<Gallery> DownloadSync()
         {
             Debug.WriteLine("Starting to download gallery list, no multi threading");
@@ -219,11 +240,7 @@ namespace LibHitomi
             Debug.WriteLine("Everything Deserialized");
             for (var i = 0; i < list.Count; i++)
             {
-                if (list[i].artists == null) list[i].artists = new string[] { };
-                if (list[i].characters == null) list[i].characters = new string[] { };
-                if (list[i].groups == null) list[i].groups = new string[] { };
-                if (list[i].parodies == null) list[i].parodies = new string[] { };
-                if (list[i].tags == null) list[i].tags = new string[] { };
+                list[i].UnNull();
             }
             Debug.WriteLine("Un-nulled!");
             return list;

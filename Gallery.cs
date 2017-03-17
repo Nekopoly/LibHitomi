@@ -45,7 +45,7 @@ namespace LibHitomi
         [JsonConstructor()]
         internal Gallery()
         {
-
+            UnNull();
         }
         [JsonProperty(PropertyName = "type")]
         internal string type;
@@ -82,6 +82,17 @@ namespace LibHitomi
 
         public string getStreamingVideoUrl()
             => RequestHelper.CreateUrl(DownloadOptions.VideoStreamingSubdomain, $"/videos/{this.videoFilename}");
+
+        internal void UnNull()
+        {
+            if (artists == null) artists = new string[] { };
+            if (characters == null) characters = new string[] { };
+            if (groups == null) groups = new string[] { };
+            if (parodies == null) parodies = new string[] { };
+            if (tags == null) tags = new string[] { };
+            if (language == null) language = "";
+            if (name == null) name = "";
+        }
 
         // Public members
         [JsonIgnore()]
