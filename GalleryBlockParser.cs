@@ -8,7 +8,7 @@ using System.Net;
 using System.IO;
 using HtmlAgilityPack;
 
-namespace LibHitomi.Downloader
+namespace LibHitomi
 {
     // 이게 존재하는 이유 : 갤러리가 403/404으로 막혀도 갤러리블럭은 접근 가능한 경우가 있어서.
     internal class GalleryBlockParser
@@ -30,9 +30,11 @@ namespace LibHitomi.Downloader
         public bool TryParse(int id, out Gallery parsedGallery)
         {
             HtmlDocument htmlDocument = new HtmlDocument();
-            Gallery gallery = new LibHitomi.Gallery();
+            Gallery gallery = new LibHitomi.Gallery(GalleryCrawlMethod.ParsedGalleryBlock);
             Regex pattern = new Regex("^/([a-zA-Z]+)/(.+)-all-1\\.html$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
             Regex languagePattern = new Regex("^/index-([a-zA-Z]+)-1\\.html$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            gallery.UnNull();
+            gallery.id = id;
 
             HttpWebRequest wreq = RequestHelper.CreateRequest("", $"/galleryblock/{id}.html");
             try
@@ -40,9 +42,10 @@ namespace LibHitomi.Downloader
                 using (WebResponse wres = wreq.GetResponse())
                 using (Stream str = wres.GetResponseStream())
                     htmlDocument.Load(str);
-                
-                gallery.name = htmlDocument.DocumentNode.SelectNodes("/h1")[0].InnerText;
-                foreach (HtmlNode linkNode in htmlDocument.DocumentNode.SelectNodes("/a[ @href ]"))
+
+                gallery.name = htmlDocument.DocumentNode.SelectSingleNode(".//h1").InnerText;
+                List<string> artistsList = new List<string>(), parodiesList = new List<string>(), tagsList = new List<string>(), groupsList = new List<string>(), charactersList = new List<string>();
+                foreach (HtmlNode linkNode in htmlDocument.DocumentNode.SelectNodes(".//a[ @href ]"))
                 {
                     string href = linkNode.GetAttributeValue("href", "");
                     bool isLanguageHref = languagePattern.IsMatch(href), isNormalHref = pattern.IsMatch(href);
@@ -58,15 +61,18 @@ namespace LibHitomi.Downloader
                         string propName = namespaceMap[match.Groups[1].Value].ToLower();
                         string value = Uri.UnescapeDataString(match.Groups[2].Value).ToLower();
 
-                        if (propName.EndsWith("s"))
-                        {
-                            object current = gallery.GetType().GetField(propName).GetValue(gallery);
-                            gallery.GetType().GetField(propName).SetValue(gallery, (string[])(((string[])current).Concat(new string[] { value })));
-                        }
-                        else
-                        {
-                            gallery.GetType().GetField(propName).SetValue(gallery, value);
-                        }
+                        if (propName == "artists")
+                            artistsList.Add(value);
+                        else if (propName == "parodies")
+                            parodiesList.Add(value);
+                        else if (propName == "tags")
+                            tagsList.Add(value);
+                        else if (propName == "groups")
+                            groupsList.Add(value);
+                        else if (propName == "characters")
+                            charactersList.Add(value);
+                        else if (propName == "type")
+                            gallery.type = value;
 
                     }
                     else
@@ -74,17 +80,23 @@ namespace LibHitomi.Downloader
                         continue;
                     }
                 }
+                gallery.artists = artistsList.ToArray();
+                gallery.parodies = parodiesList.ToArray();
+                gallery.tags = tagsList.ToArray();
+                gallery.groups = groupsList.ToArray();
+                gallery.characters = charactersList.ToArray();
                 parsedGallery = gallery;
                 return true;
             }
             catch (WebException ex)
             {
                 // catch 404
-                if((ex.Response as HttpWebResponse).StatusCode == HttpStatusCode.NotFound)
+                if ((ex.Response as HttpWebResponse).StatusCode == HttpStatusCode.NotFound)
                 {
                     parsedGallery = null;
                     return false;
-                } else
+                }
+                else
                 {
                     throw ex;
                 }

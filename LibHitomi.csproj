@@ -63,7 +63,7 @@
     <Compile Include="Downloader\EventArgs\DownloadGalleryCompeletedEventArgs.cs" />
     <Compile Include="Downloader\EventArgs\DownloadGalleryProgressEventArgs.cs" />
     <Compile Include="Downloader\EventArgs\GalleryDownloadStartedEventArgs.cs" />
-    <Compile Include="Downloader\GalleryBlockParser.cs" />
+    <Compile Include="GalleryBlockParser.cs" />
     <Compile Include="Downloader\IDownloadJob.cs" />
     <Compile Include="Downloader\ImagesDownloadJob.cs" />
     <Compile Include="Downloader\TriedDuplicatedGalleryException.cs" />

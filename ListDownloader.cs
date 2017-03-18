@@ -95,6 +95,10 @@ namespace LibHitomi
             {
                 JsonSerializer serializer = new JsonSerializer();
                 Gallery[] result = serializer.Deserialize<Gallery[]>(reader);
+                for(int i = 0; i < result.Length; i++)
+                {
+                    result[i].GalleryCrawlMethod = GalleryCrawlMethod.AddedManually;
+                }
                 return result;
             }
         }

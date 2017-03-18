@@ -10,6 +10,24 @@ using Newtonsoft.Json.Linq;
 
 namespace LibHitomi
 {
+    /// <summary>
+    /// 갤러리가 크롤링된 방법입니다.
+    /// </summary>
+    public enum GalleryCrawlMethod
+    {
+        /// <summary>
+        /// ListUpdater 클래스에 의해 정상적으로 크롤링됐습니다.
+        /// </summary>
+        Normal,
+        /// <summary>
+        /// Gallery.GetGalleryByParsingGalleryBlock() 메소드를 이용하여 크롤링됐습니다.
+        /// </summary>
+        ParsedGalleryBlock,
+        /// <summary>
+        /// ListUpdater의 ExtraGalleries 관련 속성/기능을 이용하여 크롤링되지 아니하고 수동으로 추가됐습니다.
+        /// </summary>
+        AddedManually
+    }
     public class Gallery
     {
         // Static Members
@@ -35,16 +53,29 @@ namespace LibHitomi
         public static string[] GetThumbnailUrls(int galleryId)
             => getImageNumbs(galleryId)
             .Select(n => RequestHelper.CreateUrl(DownloadOptions.ThumbnailSubdomain, $"/smalltn/{galleryId}/{n}.jpg")).ToArray();
+        
+        public static bool GetGalleryByParsingGalleryBlock(int id, out Gallery gallery)
+        {
+            GalleryBlockParser parser = new GalleryBlockParser();
+            return parser.TryParse(id, out gallery);
+        }
 
         public static string[] GetImageUrls(Gallery gallery)
         {
             return GetImageUrls(gallery.Id);
         }
 
+        // instance members
+        internal Gallery(GalleryCrawlMethod method)
+        {
+            this.GalleryCrawlMethod = method;
+            UnNull();
+        }
         // Json Deserialization
         [JsonConstructor()]
         internal Gallery()
         {
+            this.GalleryCrawlMethod = GalleryCrawlMethod.Normal;
             UnNull();
         }
         [JsonProperty(PropertyName = "type")]
@@ -69,6 +100,10 @@ namespace LibHitomi
         private int videoGalleryId;
         [JsonProperty(PropertyName = "id")]
         internal int id;
+
+        // Public properties
+        [JsonIgnore()]
+        public GalleryCrawlMethod GalleryCrawlMethod { get; internal set; }
 
         // Public methods
         public string[] getImageUrls()
