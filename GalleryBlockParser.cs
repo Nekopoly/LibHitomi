@@ -36,6 +36,7 @@ namespace LibHitomi
             gallery.UnNull();
             gallery.id = id;
 
+            htmlDocument.OptionDefaultStreamEncoding = System.Text.Encoding.UTF8;
             HttpWebRequest wreq = RequestHelper.CreateRequest("", $"/galleryblock/{id}.html");
             try
             {
