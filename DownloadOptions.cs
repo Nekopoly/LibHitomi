@@ -28,6 +28,10 @@ namespace LibHitomi
         /// 동영상 스트리밍 주소를 생성할 때 서용할 서브도메인입니다.
         /// </summary>
         public static string VideoStreamingSubdomain { get; set; } = "streaming";
+        /// <summary>
+        /// 다운로드나 갤러리 목록 조회등에 사용할 프록시입니다.
+        /// </summary>
+        public static WebProxy DefaultProxy { get; set; } = null;
     }
     internal static class RequestHelper
     {
@@ -53,6 +57,10 @@ namespace LibHitomi
             req.ServicePoint.Expect100Continue = false;
             req.UserAgent = "Mozilla/5.0 (compatible)";
             req.AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip;
+            if(DownloadOptions.DefaultProxy != null)
+            {
+                req.Proxy = DownloadOptions.DefaultProxy;
+            }
             return req;
         }
         internal static HttpWebRequest CreateRequest(string subdomain, string path)
