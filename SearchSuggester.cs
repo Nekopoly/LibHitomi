@@ -65,8 +65,9 @@ namespace LibHitomi
                     HitomiTagInfo[] tagInfos = (HitomiTagInfo[])(typeof(HitomiTags).GetProperty(ns).GetValue(tagAutocompleteList));
                     foreach (HitomiTagInfo tagInfo in tagInfos)
                     {
-                        suggestions[ns].Add(tagInfo.Text);
-                        sortRankings[ns].Add(tagInfo.Text, tagInfo.Count);
+                        string text = tagInfo.Text.Trim().Replace(' ', '_');
+                        suggestions[ns].Add(text);
+                        sortRankings[ns].Add(text, tagInfo.Count);
                     }
                 }
                 foreach (Gallery gallery in galleries)
@@ -111,8 +112,7 @@ namespace LibHitomi
                     if (lastThing.Contains(":"))
                     {
                         string ns = lastThing.Split(':').First();
-                        string matchInput = lastThing.Split(':').Last().Trim();
-                        string matchWithWhitespaces = matchInput.Trim().Replace('_', ' ');
+                        string match = lastThing.Split(':').Last().Trim().ToLower();
                         bool isExclusive = false;
 
                         if (ns.StartsWith("-"))
@@ -124,8 +124,8 @@ namespace LibHitomi
                             return new string[] { };
                         string[] simillarMatches = suggestions[ns].ToList().FindAll(new Predicate<string>((string i) =>
                         {
-                            return i.ToLower().StartsWith(matchInput.ToLower()); // Optimization for C# Textbox Autocomplete
-                        })).OrderBy((i) => { return (ns == "name" || ns == "type" || !sortRankings[ns].ContainsKey(matchWithWhitespaces)) ? 0 : sortRankings[ns][matchWithWhitespaces]; }).ToArray();
+                            return i.ToLower().StartsWith(match); // Optimization for C# Textbox Autocomplete
+                        })).OrderBy((i) => { return (ns == "name" || ns == "type" || !sortRankings[ns].ContainsKey(match)) ? 0 : sortRankings[ns][match]; }).ToArray();
                         foreach (string i in simillarMatches)
                         {
                             suggests.Add(withoutLastThing + (withoutLastThing == "" ? "" : " ") + (isExclusive ? "-" : "") + ns + ":" + i);
