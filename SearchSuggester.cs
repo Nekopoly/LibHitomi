@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Newtonsoft.Json;
+using System.Net;
+using System.IO;
 using System.Text;
 
 namespace LibHitomi
@@ -11,146 +14,135 @@ namespace LibHitomi
     public delegate void autoCompleteSuggestedDelegate(string[] results);
     public class SearchSuggester
     {
-        Dictionary<string, HashSet<string>> suggestions = new Dictionary<string, HashSet<string>>();
-        Dictionary<string, string> namespaceMap = new Dictionary<string, string>();
-        bool inited = false;
-        private void initNamespaceMap()
+        // These classes are used for deserialization
+        private class HitomiTags
         {
-            if (namespaceMap.Count == 0)
-            {
-                namespaceMap = new Dictionary<string, string>() {
-                    { "male", "MaleTags" },
-                    { "female", "FemaleTags" }, // male:, female:도 내부적으론 Tag 속성에 있음.
-                    { "tag", "Tags" },
-                    { "artist", "Artists" },
-                    { "group", "Groups" },
-                    { "circle", "Groups" },
-                    { "series", "Parodies" },
-                    { "parody", "Parodies" },
-                    { "character", "Character" },
-                    { "language", "Language" },
-                    { "name", "Name" },
-                    { "title", "Name" },
-                    { "type", "Type" }
-                };
-            }
-
+            public HitomiTagInfo[] artist { get; set; }
+            public HitomiTagInfo[] character { get; set; }
+            public HitomiTagInfo[] female { get; set; }
+            public HitomiTagInfo[] group { get; set; }
+            public HitomiTagInfo[] language { get; set; }
+            public HitomiTagInfo[] male { get; set; }
+            public HitomiTagInfo[] series { get; set; }
+            public HitomiTagInfo[] tag { get; set; }
         }
+        private class HitomiTagInfo
+        {
+            [JsonProperty(PropertyName = "s")]
+            public string Text { get; set; }
+            [JsonProperty(PropertyName = "t")]
+            public int Count { get; set; }
+        }
+        private string[] downloadableNamespaces = { "artist", "character", "female", "group", "language", "male", "series", "tag" };
+        private string[] undownloadableNamespaces = { "type", "name" };
+        Dictionary<string, HashSet<string>> suggestions = new Dictionary<string, HashSet<string>>();
+        Dictionary<string, Dictionary<string, int>> sortRankings = new Dictionary<string, Dictionary<string, int>>();
+        bool inited = false;
         private void init(object _galleries)
         {
             InitializationStarted();
-            string[] arrayProps = { "Artists", "Groups", "Parodies", "Tags", "Characters" };
-            string[] nonArrayProps = { "Type", "Language", "Name" };
-            string[] allProps = arrayProps.Concat(nonArrayProps).ToArray();
             lock (suggestions)
-                lock (namespaceMap)
+            {
+                Gallery[] galleries = (Gallery[])_galleries;
+                suggestions.Clear();
+                foreach (string prop in downloadableNamespaces.Concat(undownloadableNamespaces).ToArray())
                 {
-                    Gallery[] galleries = (Gallery[])_galleries;
-                    initNamespaceMap();
-                    suggestions.Clear();
-                    foreach (string prop in allProps.Concat(new string[] { "FemaleTags", "MaleTags" }).ToArray())
-                    {
-                        suggestions[prop] = new HashSet<string>();
-                    }
-                    foreach (Gallery gallery in galleries)
-                    {
-                        foreach (string arrayProp in arrayProps)
-                        {
-                            string[] a = (string[])gallery.GetType().GetProperty(arrayProp).GetValue(gallery);
-                            if (arrayProp == "Tags")
-                            {
-                                // male, female 분리
-                                foreach (string i in a)
-                                {
-                                    if (i.ToLower().StartsWith("female:"))
-                                        suggestions["FemaleTags"].Add(i.ToLower().Substring("female:".Length).Replace(' ', '_'));
-                                    else if (i.ToLower().StartsWith("male:"))
-                                        suggestions["MaleTags"].Add(i.ToLower().Substring("male:".Length).Replace(' ', '_'));
-                                    else
-                                        suggestions["Tags"].Add(i.ToLower().Replace(' ', '_'));
-                                }
-                            }
-                            else
-                            {
-                                foreach (string i in a)
-                                    suggestions[arrayProp].Add(i.Replace(' ', '_'));
-                            }
-                        }
-                        foreach (string nonArrayProp in nonArrayProps)
-                        {
-                            string a = (string)gallery.GetType().GetProperty(nonArrayProp).GetValue(gallery);
-                            suggestions[nonArrayProp].Add(a.Replace(' ', '_'));
-                        }
-                    }
-                    inited = true;
+                    suggestions[prop] = new HashSet<string>();
+                    sortRankings[prop] = new Dictionary<string, int>();
                 }
+                HttpWebRequest wreq = RequestHelper.CreateRequest("", "/tags.json");
+                HitomiTags tagAutocompleteList = null;
+                using (WebResponse wres = wreq.GetResponse())
+                using (Stream str = wres.GetResponseStream())
+                using (StreamReader sre = new StreamReader(str))
+                using (JsonReader reader = new JsonTextReader(sre))
+                {
+                    JsonSerializer serializer = new JsonSerializer();
+                    tagAutocompleteList = serializer.Deserialize<HitomiTags>(reader);
+                }
+                foreach (string ns in downloadableNamespaces)
+                {
+                    HitomiTagInfo[] tagInfos = (HitomiTagInfo[])(typeof(HitomiTags).GetProperty(ns).GetValue(tagAutocompleteList));
+                    foreach (HitomiTagInfo tagInfo in tagInfos)
+                    {
+                        suggestions[ns].Add(tagInfo.Text);
+                        sortRankings[ns].Add(tagInfo.Text, tagInfo.Count);
+                    }
+                }
+                foreach (Gallery gallery in galleries)
+                {
+                    suggestions["type"].Add(gallery.Type);
+                    suggestions["name"].Add(gallery.Name);
+                }
+                inited = true;
+            }
             InitializaitonCompleted();
         }
         private string[] suggest(string query)
         {
-            lock(suggestions)
-                lock (namespaceMap)
+            if (!inited)
+                return new string[] { };
+            lock (suggestions)
+            {
+                string[] everyNamespaces = downloadableNamespaces.Concat(undownloadableNamespaces).ToArray();
+                List<string> suggests = new List<string>();
+                if (query.EndsWith(" ") || query.Trim().Length == 0)
                 {
-                    if (!inited)
-                        return new string[] { };
-                    List<string> suggests = new List<string>();
-                    if (query.EndsWith(" ") || query.Trim().Length == 0)
+                    foreach (string i in everyNamespaces)
                     {
-                        foreach (string i in namespaceMap.Keys)
-                        {
-                            suggests.Add(query + i + ":");
-                        }
-                        return suggests.ToArray();
+                        suggests.Add(query + i + ":");
                     }
-                    else if (!query.Contains(":"))
+                    return suggests.ToArray();
+                }
+                else if (!query.Contains(":"))
+                {
+                    foreach (string i in everyNamespaces)
                     {
-                        foreach (string i in namespaceMap.Keys)
+                        suggests.Add(i + ":");
+                        suggests.Add("-" + i + ":");
+                    }
+                    return suggests.ToArray();
+                }
+                else
+                {
+                    string[] splitted = query.Split(' ');
+                    string lastThing = splitted.Last();
+                    string withoutLastThing = splitted.Length == 1 ? "" : string.Join(" ", splitted.Take(splitted.Length - 1).ToArray());
+                    if (lastThing.Contains(":"))
+                    {
+                        string ns = lastThing.Split(':').First();
+                        string matchInput = lastThing.Split(':').Last().Trim();
+                        string matchWithWhitespaces = matchInput.Trim().Replace('_', ' ');
+                        bool isExclusive = false;
+
+                        if (ns.StartsWith("-"))
                         {
-                            suggests.Add(i + ":");
-                            suggests.Add("-" + i + ":");
+                            isExclusive = true;
+                            ns = ns.Substring(1);
+                        }
+                        if (!everyNamespaces.Contains(ns))
+                            return new string[] { };
+                        string[] simillarMatches = suggestions[ns].ToList().FindAll(new Predicate<string>((string i) =>
+                        {
+                            return i.ToLower().StartsWith(matchInput.ToLower()); // Optimization for C# Textbox Autocomplete
+                        })).OrderBy((i) => { return (ns == "name" || ns == "type" || !sortRankings[ns].ContainsKey(matchWithWhitespaces)) ? 0 : sortRankings[ns][matchWithWhitespaces]; }).ToArray();
+                        foreach (string i in simillarMatches)
+                        {
+                            suggests.Add(withoutLastThing + (withoutLastThing == "" ? "" : " ") + (isExclusive ? "-" : "") + ns + ":" + i);
                         }
                         return suggests.ToArray();
                     }
                     else
                     {
-                        string[] splitted = query.Split(' ');
-                        string lastThing = splitted.Last();
-                        string withoutLastThing = splitted.Length == 1 ? "" : string.Join(" ", splitted.Take(splitted.Length - 1).ToArray());
-                        if (lastThing.Contains(":"))
+                        foreach (string i in everyNamespaces)
                         {
-                            string ns = lastThing.Split(':').First();
-                            string match = lastThing.Split(':').Last();
-                            bool isExclusive = false;
-
-                            if (ns.StartsWith("-"))
-                            {
-                                isExclusive = true;
-                                ns = ns.Substring(1);
-                            }
-                            if (!namespaceMap.ContainsKey(ns))
-                                return new string[] { };
-                            string matchedProperty = namespaceMap[ns];
-                            string[] simillarMatches = suggestions[matchedProperty].ToList().FindAll(new Predicate<string>((string i) =>
-                            {
-                                return i.ToLower().Contains(match.ToLower());
-                            })).OrderBy((i) => { return i.ToLower().IndexOf(match.ToLower()); }).ToArray();
-                            foreach (string i in simillarMatches)
-                            {
-                                suggests.Add(withoutLastThing + (withoutLastThing == "" ? "" : " ") + (isExclusive ? "-" : "") + ns + ":" + i);
-                            }
-                            return suggests.ToArray();
+                            suggests.Add(withoutLastThing + " " + i + ":");
+                            suggests.Add(withoutLastThing + " -" + i + ":");
                         }
-                        else
-                        {
-                            foreach (string i in namespaceMap.Keys)
-                            {
-                                suggests.Add(withoutLastThing + " " + i + ":");
-                                suggests.Add(withoutLastThing + " -" + i + ":");
-                            }
-                        }
-                        return suggests.ToArray();
                     }
+                    return suggests.ToArray();
                 }
+            }
         }
         private void suggestThread(object query)
         {
