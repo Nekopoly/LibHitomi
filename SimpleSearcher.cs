@@ -8,6 +8,16 @@ namespace LibHitomi
 {
     public delegate List<Gallery> FromQueryCalledDelegate(string from, out bool success);
     /// <summary>
+    /// 잘못된 검색어를 입력한 경우 발생하는 예외입니다.
+    /// </summary>
+    public class InvalidQueryException : Exception
+    {
+        internal InvalidQueryException() : base("잘못된 검색어를 입력하셨습니다.")
+        {
+
+        }
+    }
+    /// <summary>
     /// 문자열 형태의 검색어를 받아 갤러리 중에서 특정 조건에 부합하는 갤러리를 찾아냅니다.
     /// </summary>
     public class SimpleSearcher
@@ -93,20 +103,22 @@ namespace LibHitomi
                         continue;
                     }
                     List<Gallery> fromGalleries = FromQueryCalled(match, out success);
-                    if(success && match != from)
+                    if (success && match != from)
                     {
                         return search(fromGalleries, query, match);
-                    } else
+                    }
+                    else
                     {
                         continue;
                     }
                 }
-                else if (ns == "limit") {
+                else if (ns == "limit")
+                {
                     limit = int.Parse(match);
                     continue;
                 }
                 else
-                    throw new Exception("읽을 수 없는 검색어입니다.");
+                    throw new InvalidQueryException();
 
                 // http://stackoverflow.com/a/1197004
                 result = result.FindAll(new Predicate<Gallery>((Gallery gallery) =>
