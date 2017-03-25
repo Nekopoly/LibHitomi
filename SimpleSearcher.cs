@@ -68,6 +68,23 @@ namespace LibHitomi
                     ns = "Name";
                 else if (ns == "type")
                     ns = "Type";
+#if SupportIdSelectQuery
+                else if (ns == "id")
+                {
+                    int parsedId = int.Parse(match);
+                    result.Add(galleries.Where((Gallery gallery) => { return gallery.id == parsedId; }).First());
+                    continue;
+                }
+#endif
+#if DEBUG && SupportDebugQuery
+                else if (ns == "debug")
+                {
+                    if (match.StartsWith("clear"))
+                        result.Clear();
+
+                    continue;
+                }
+#endif
                 else if (ns == "from")
                 {
                     bool success = false;

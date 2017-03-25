@@ -115,6 +115,14 @@ namespace LibHitomi
                         string match = lastThing.Split(':').Last().Trim().ToLower();
                         bool isExclusive = false;
 
+                        if(!everyNamespaces.Contains(ns))
+                        {
+                            foreach (string i in everyNamespaces)
+                            {
+                                suggests.Add(query + " " + i + ":");
+                            }
+                            return suggests.ToArray();
+                        }
                         if (ns.StartsWith("-"))
                         {
                             isExclusive = true;
