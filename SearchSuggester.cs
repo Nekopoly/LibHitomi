@@ -33,8 +33,13 @@ namespace LibHitomi
             [JsonProperty(PropertyName = "t")]
             public int Count { get; set; }
         }
-        private string[] downloadableNamespaces = { "artist", "character", "female", "group", "language", "male", "series", "tag" };
-        private string[] undownloadableNamespaces = { "type", "name" };
+        private string[] getNamespaces(bool downloadable = true, bool undownloadable = false)
+        {
+            string[] arr = new string[] { };
+            if (downloadable) arr = arr.Concat(new String[] { "artist", "character", "female", "group", "language", "male", "series", "tag" }).ToArray();
+            if (undownloadable) arr = arr.Concat(new String[] { "type", "name" }).ToArray();
+            return arr;
+        }
         Dictionary<string, HashSet<string>> suggestions = new Dictionary<string, HashSet<string>>();
         Dictionary<string, Dictionary<string, int>> sortRankings = new Dictionary<string, Dictionary<string, int>>();
         bool inited = false;
@@ -45,7 +50,7 @@ namespace LibHitomi
             {
                 Gallery[] galleries = (Gallery[])_galleries;
                 suggestions.Clear();
-                foreach (string prop in downloadableNamespaces.Concat(undownloadableNamespaces).ToArray())
+                foreach (string prop in getNamespaces(true, true))
                 {
                     suggestions[prop] = new HashSet<string>();
                     sortRankings[prop] = new Dictionary<string, int>();
@@ -60,7 +65,7 @@ namespace LibHitomi
                     JsonSerializer serializer = new JsonSerializer();
                     tagAutocompleteList = serializer.Deserialize<HitomiTags>(reader);
                 }
-                foreach (string ns in downloadableNamespaces)
+                foreach (string ns in getNamespaces(true, false))
                 {
                     HitomiTagInfo[] tagInfos = (HitomiTagInfo[])(typeof(HitomiTags).GetProperty(ns).GetValue(tagAutocompleteList));
                     foreach (HitomiTagInfo tagInfo in tagInfos)
@@ -85,7 +90,7 @@ namespace LibHitomi
                 return new string[] { };
             lock (suggestions)
             {
-                string[] everyNamespaces = downloadableNamespaces.Concat(undownloadableNamespaces).ToArray();
+                string[] everyNamespaces = getNamespaces(true, true);
                 List<string> suggests = new List<string>();
                 if (query.EndsWith(" ") || query.Trim().Length == 0)
                 {
