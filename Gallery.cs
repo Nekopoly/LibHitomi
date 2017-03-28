@@ -54,6 +54,15 @@ namespace LibHitomi
             => getImageNumbs(galleryId)
             .Select(n => RequestHelper.CreateUrl(DownloadOptions.ThumbnailSubdomain, $"/smalltn/{galleryId}/{n}.jpg")).ToArray();
         
+        public static void DeserializeToJson(Gallery[] galleries, Stream stream)
+        {
+            using (StreamWriter sw = new StreamWriter(stream))
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Serialize(sw, galleries);
+            }
+        }
+
         public static bool GetGalleryByParsingGalleryBlock(int id, out Gallery gallery)
         {
             GalleryBlockParser parser = new GalleryBlockParser();
