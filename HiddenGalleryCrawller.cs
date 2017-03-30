@@ -10,10 +10,6 @@ namespace LibHitomi
     public enum CrawlProgressTypes
     {
         /// <summary>
-        /// 검색 가능한 작품으로, 건너뜁니다.
-        /// </summary>
-        Searchable,
-        /// <summary>
         /// 허탕쳤습니다. (foundGallery 매개변수에는 null이 전달됩니다.)
         /// </summary>
         NotFound,
@@ -82,10 +78,12 @@ namespace LibHitomi
             numberQueue.Clear();
             resultGalleries.Clear();
             triedGalleriesCount = 0;
+            List<int> searchableIds = new List<int>(galleries.Select(gallery => gallery.id));
             for (int i = startGalleryId; i <= endGalleryId; i++)
             {
                 numberQueue.Enqueue(i);
             }
+            numberQueue = new Queue<int>(numberQueue.Except(searchableIds));
             targetGalleriesCount = numberQueue.Count;
             initThreads();
         }
@@ -113,12 +111,6 @@ namespace LibHitomi
                     else
                         break;
                 }
-                if(galleries.Any(gall => gall.id == number))
-                {
-                    CrawlProgress(CrawlProgressTypes.Searchable, null, targetGalleriesCount - triedGalleriesCount);
-                    Interlocked.Increment(ref triedGalleriesCount);
-                    continue;
-                }
                 Gallery gallery;
                 bool isParsed = parser.TryParse(number, out gallery);
                 if (isParsed)
@@ -135,6 +127,9 @@ namespace LibHitomi
                         CrawlProgress(CrawlProgressTypes.AnimeSkipped, gallery, targetGalleriesCount - triedGalleriesCount);
                     }
                         
+                } else
+                {
+                    CrawlProgress(CrawlProgressTypes.NotFound, null, targetGalleriesCount - triedGalleriesCount);
                 }
                 Interlocked.Increment(ref triedGalleriesCount);
             }
