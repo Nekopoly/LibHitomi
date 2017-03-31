@@ -70,11 +70,12 @@
     <Compile Include="Downloader\WhenDuplicatedGalleryRequested.cs" />
     <Compile Include="DownloadOptions.cs" />
     <Compile Include="Gallery.cs" />
-    <Compile Include="HiddenGalleryCrawller.cs" />
+    <Compile Include="UnsearchableGalleryCrawller.cs" />
     <Compile Include="ListDownloader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SearchSuggester.cs" />
     <Compile Include="SimpleSearcher.cs" />
+    <Compile Include="UnsearchableGalleryCrawlProgressEventArgs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="HitomiSharp-SigningKey.snk" />

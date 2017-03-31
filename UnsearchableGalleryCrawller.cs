@@ -22,7 +22,7 @@ namespace LibHitomi
         /// </summary>
         AnimeSkipped
     }
-    public delegate void CrawlProgressDelegate(CrawlProgressTypes progressType, Gallery foundGallery, int idsLeft);
+    public delegate void CrawlProgressDelegate(object sender, UnsearchableGalleryCrawlProgressEventArgs e);
     public delegate void CrawlCompletedDelegate(Gallery[] galleries);
     // 참고 : npm hitomi.la 묘듈에서는 Unsearchable, Hidden 등으로 용어에 혼란이 있음.
     //        이 라이브러리에서는 Unsearchable로 용어를 통일함.
@@ -38,6 +38,7 @@ namespace LibHitomi
         private bool isCrawlling = false;
         private Thread[] threads;
         private GalleryBlockParser parser = new GalleryBlockParser();
+        private System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
         private Queue<int> numberQueue = new Queue<int>();
         /// <summary>
         /// 크롤링이 완료될 시 발생하는 이벤트입니다.
@@ -89,6 +90,7 @@ namespace LibHitomi
         }
         private void initThreads()
         {
+            stopwatch.Restart();
             threads = new Thread[ThreadCount];
             for (int i = 0; i < ThreadCount; i++)
             {
@@ -97,6 +99,23 @@ namespace LibHitomi
                 threads[i].Name = $"Unsearchable Gallery Crawlling Thread" + (isLoyal ? " - Loyal" : "");
                 threads[i].Start(isLoyal);
             }
+        }
+        private void raiseProgressEvent(CrawlProgressTypes type, Gallery gallery=null)
+        {
+            int totalSuccesses;
+            lock (resultGalleries)
+            {
+                totalSuccesses = resultGalleries.Count;
+            }
+            CrawlProgress(this, new UnsearchableGalleryCrawlProgressEventArgs()
+            {
+                TotalIdCount = targetGalleriesCount,
+                CrawlledIdCount = triedGalleriesCount,
+                ElapsedTime = stopwatch.ElapsedMilliseconds,
+                EventType = type,
+                FoundGallery = gallery,
+                FoundUnserachableGalleryCount = totalSuccesses
+            });
         }
         private void threadFunc(object _isLoyalThread)
         {
@@ -121,15 +140,15 @@ namespace LibHitomi
                         {
                             resultGalleries.Add(gallery);
                         }
-                        CrawlProgress(CrawlProgressTypes.FoundUnsearchable, gallery, targetGalleriesCount - triedGalleriesCount);
+                        raiseProgressEvent(CrawlProgressTypes.FoundUnsearchable, gallery);
                     }
                     else {
-                        CrawlProgress(CrawlProgressTypes.AnimeSkipped, gallery, targetGalleriesCount - triedGalleriesCount);
+                        raiseProgressEvent(CrawlProgressTypes.AnimeSkipped, gallery);
                     }
                         
                 } else
                 {
-                    CrawlProgress(CrawlProgressTypes.NotFound, null, targetGalleriesCount - triedGalleriesCount);
+                    raiseProgressEvent(CrawlProgressTypes.NotFound, null);
                 }
                 Interlocked.Increment(ref triedGalleriesCount);
             }
