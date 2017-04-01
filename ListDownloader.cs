@@ -121,7 +121,8 @@ namespace LibHitomi
             {
                 Debug.WriteLine("Loading extra galleries");
                 ListDownloadProgress(ListDownloadProgressType.LoadingExtraGalleries, null);
-                list.AddRange(loadExtraGalleries().Where((Gallery extraGallery) => !list.Any((Gallery gallery) => gallery.id == extraGallery.id)));
+                List<int> searchableIds = new List<int>(list.Select(gallery => gallery.id));
+                list.AddRange(loadExtraGalleries().Where((Gallery extraGallery) => !searchableIds.Contains(extraGallery.id)));
                 ListDownloadProgress(ListDownloadProgressType.LoadedExtraGalleries, null);
             } else
             {
