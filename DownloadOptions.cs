@@ -49,7 +49,9 @@ namespace LibHitomi
         {
             HttpWebRequest req = HttpWebRequest.CreateHttp(uri) as HttpWebRequest;
             req.ServicePoint.ConnectionLimit = int.MaxValue;
+#if !Continue100
             req.ServicePoint.Expect100Continue = false;
+#endif
             req.Accept = "*/*";
             req.KeepAlive = true;
             req.Method = "GET";
