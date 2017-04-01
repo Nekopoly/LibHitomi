@@ -48,6 +48,8 @@ namespace LibHitomi
         internal static HttpWebRequest CreateRequest(string uri)
         {
             HttpWebRequest req = HttpWebRequest.CreateHttp(uri) as HttpWebRequest;
+            req.ServicePoint.ConnectionLimit = int.MaxValue;
+            req.ServicePoint.Expect100Continue = false;
             req.Accept = "*/*";
             req.KeepAlive = true;
             req.Method = "GET";
