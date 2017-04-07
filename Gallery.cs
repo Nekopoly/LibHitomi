@@ -120,7 +120,7 @@ namespace LibHitomi
 
         public string[] getThumbnailUrls()
             => GetThumbnailUrls(this.id);
-
+        
         public string getDownloadableVideoUrl()
             => RequestHelper.CreateUrl(DownloadOptions.ImageSubdomain, $"/videos/{this.videoFilename}");
 
