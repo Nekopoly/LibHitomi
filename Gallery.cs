@@ -53,7 +53,7 @@ namespace LibHitomi
         public static string[] GetThumbnailUrls(int galleryId)
             => getImageNumbs(galleryId)
             .Select(n => RequestHelper.CreateUrl(DownloadOptions.ThumbnailSubdomain, $"/smalltn/{galleryId}/{n}.jpg")).ToArray();
-        
+
         public static void DeserializeToJson(Gallery[] galleries, Stream stream)
         {
             using (StreamWriter sw = new StreamWriter(stream))
@@ -120,7 +120,10 @@ namespace LibHitomi
 
         public string[] getThumbnailUrls()
             => GetThumbnailUrls(this.id);
-        
+
+        public Stream CreateThumbnailStream(int index)
+            => RequestHelper.CreateRequest(getThumbnailUrls()[index]).GetResponse().GetResponseStream();
+
         public string getDownloadableVideoUrl()
             => RequestHelper.CreateUrl(DownloadOptions.ImageSubdomain, $"/videos/{this.videoFilename}");
 
