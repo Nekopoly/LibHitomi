@@ -73,6 +73,7 @@ namespace LibHitomi
                 return int.Parse(match.Groups[1].Value);
             }
         }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         private Gallery[] getChunk(int i, bool raiseEvent = false)
         {
             if (raiseEvent) ListDownloadProgress(ListDownloadProgressType.DownloadingChunkStarted, i);
