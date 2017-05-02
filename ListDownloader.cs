@@ -55,7 +55,6 @@ namespace LibHitomi
         private Regex jsonCountPattern = new Regex("number_of_gallery_jsons\\s?=\\s?([0-9]+)");
         private Dictionary<int, Gallery[]> chunks = new Dictionary<int, Gallery[]>();
         private bool isDownloading = false;
-        private int chunkIndex = 0;
         private int chunkCnt = 0;
         public ListDownloader()
         {
@@ -73,7 +72,6 @@ namespace LibHitomi
                 return int.Parse(match.Groups[1].Value);
             }
         }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         private Gallery[] getChunk(int i, bool raiseEvent = false)
         {
             if (raiseEvent) ListDownloadProgress(ListDownloadProgressType.DownloadingChunkStarted, i);
@@ -105,11 +103,6 @@ namespace LibHitomi
         }
         private void finishChunksJob(object uselessparameter)
         {
-            if (chunks.Count != chunkCnt)
-            {
-                ThreadPool.QueueUserWorkItem(finishChunksJob);
-                return;
-            }
             Debug.WriteLine("Finishing Thread #" + Thread.CurrentThread.ManagedThreadId + " Started");
             ListDownloadProgress(ListDownloadProgressType.FinishingStarted, null);
             List<Gallery> list = new List<Gallery>();
@@ -137,21 +130,13 @@ namespace LibHitomi
             Debug.WriteLine("Unnulled, Completed and Finished!");
             ListDownloadCompleted(list);
         }
-        private void downloadChunkJob(object uselessparameter)
+        private void downloadChunkJob(object _index)
         {
-            int index = chunkIndex--;
-            Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + ", index=" + index);
-            if (index == -1)
-            {
-                ThreadPool.QueueUserWorkItem(finishChunksJob);
-            }
-            if (index < 0)
-                return;
+            int index = (int)_index;
             Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + ", Working with " + index + "st chunk(zero-based)");
             Gallery[] chunk = getChunk(index, true);
             chunks.Add(index, chunk);
             Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + "," + index + "st chunk(zero-based) has " + chunk.Length + " galleries and it's added");
-            ThreadPool.QueueUserWorkItem(downloadChunkJob);
             return;
         }
 
@@ -163,10 +148,6 @@ namespace LibHitomi
         /// 목록 다운로드가 진행중일때 발생합니다.
         /// </summary>
         public event ListDownloadProgress ListDownloadProgress;
-        /// <summary>
-        /// 다운로드시 사용할 쓰레드 갯수입니다.
-        /// </summary>
-        public int ThreadCount { get; set; } = 4;
         /// <summary>
         /// 추가적으로 갤러리들을 파일에서 불러올지의 여부입니다.
         /// </summary>
@@ -204,7 +185,7 @@ namespace LibHitomi
         /// 갤러리 목록 다운로드를 시작합니다. 여러개의 쓰레드를 사용하며 완료시 이벤트를 발생시킵니다.
         /// </summary>
         /// <param name="throwErrorIfAlreadyDownloading">이미 다운로드하고 있을 시 오류를 반환할 지의 여부입니다.</param>
-        public void StartDownload(bool throwErrorIfAlreadyDownloading = true)
+        public async void StartDownload(bool throwErrorIfAlreadyDownloading = true)
         {
             if(isDownloading && throwErrorIfAlreadyDownloading)
             {
@@ -218,38 +199,16 @@ namespace LibHitomi
             }
             Debug.WriteLine("Starting to download gallery list");
             chunkCnt = getJsonCount();
-            chunkIndex = chunkCnt - 1;
             ListDownloadProgress(ListDownloadProgressType.GotTotalChunkCount, chunkCnt);
             Debug.WriteLine("Gallery Json Chunk Count : " + chunkCnt);
             chunks.Clear();
-            for(var i = 0; i < ThreadCount; i++)
+            List<Task> tasks = new List<Task>();
+            for(var i = 0; i < chunkCnt; i++)
             {
-                ThreadPool.QueueUserWorkItem(downloadChunkJob);
+                tasks.Add(Task.Factory.StartNew(downloadChunkJob, i));
             }
-        }
-        /// <summary>
-        /// 여러개의 쓰레드를 사용하지 않고 갤러리 목록을 다운로드합니다. 느리고 권장되지 않습니다.
-        /// </summary>
-        /// <returns>갤러리 목록</returns>
-        [Obsolete("StartDownload 메소드를 사용해주세요.")]
-        public List<Gallery> DownloadSync()
-        {
-            Debug.WriteLine("Starting to download gallery list, no multi threading");
-            int jsonCount = getJsonCount();
-            Debug.WriteLine("Gallery Json Count : " + jsonCount);
-            List<Gallery> list = new List<Gallery>();
-            for (var i = 0; i < jsonCount; i++)
-            {
-                Debug.WriteLine("Deserializing " + i + "st Chunk");
-                list.AddRange(getChunk(i));
-            }
-            Debug.WriteLine("Everything Deserialized");
-            for (var i = 0; i < list.Count; i++)
-            {
-                list[i].UnNull();
-            }
-            Debug.WriteLine("Un-nulled!");
-            return list;
+            await Task.WhenAll(tasks.ToArray());
+            finishChunksJob(null);
         }
     }
 }
