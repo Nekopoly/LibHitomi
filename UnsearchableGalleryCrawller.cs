@@ -154,7 +154,7 @@ namespace LibHitomi
             }
             if (isLoyalThread)
             {
-                while (triedGalleriesCount != targetGalleriesCount)
+                while (!triedGalleriesCount.Equals(targetGalleriesCount))
                 {
 
                 }
