@@ -76,7 +76,8 @@ namespace LibHitomi
         {
             if (raiseEvent) ListDownloadProgress(ListDownloadProgressType.DownloadingChunkStarted, i);
             HttpWebRequest wreq = RequestHelper.CreateRequest(DownloadOptions.JsonSubdomain, $"/galleries{i}.json");
-            using (Stream str = wreq.GetResponse().GetResponseStream())
+            using (WebResponse wres = wreq.GetResponse())
+            using (Stream str = wres.GetResponseStream())
             using (StreamReader sre = new StreamReader(str))
             using (JsonReader reader = new JsonTextReader(sre))
             {
