@@ -126,6 +126,10 @@ namespace LibHitomi
                     if (ns != "Name" && ns != "Language" && ns != "Type")
                     {
                         string[] values = (string[])gallery.GetType().GetProperty(ns).GetValue(gallery);
+                        if(match == "~~na~~")
+                        {
+                            return values.Length == 0;
+                        }
                         foreach (string j in values)
                         {
                             if (j.ToLower() == match.ToLower())
@@ -136,16 +140,18 @@ namespace LibHitomi
                     else if (ns == "Name")
                     {
                         string name = gallery.Name.ToLower();
+                        if (match == "~~na~~") return name == "" || name == null;
                         bool matched = name.Contains(match.ToLower());
                         if (isExclusion) matched = !matched;
                         return matched;
                     } else if (ns == "Language" || ns == "Type")
                     {
-                        bool matched = (string)gallery.GetType().GetProperty(ns).GetValue(gallery) == match.ToLower();
+                        string gallval = (string)gallery.GetType().GetProperty(ns).GetValue(gallery);
+                        bool matched = gallval == match.ToLower();
+                        if (match == "~~na~~") return gallval == "" || gallval == null;
                         if (isExclusion) matched = !matched;
                         return matched;
-                    } else
-                    {
+                    } else {
                         throw new Exception("알 수 없는 네임스페이스입니다");
                     }
                 }));
