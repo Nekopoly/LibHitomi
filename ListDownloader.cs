@@ -102,7 +102,7 @@ namespace LibHitomi
                 return result;
             }
         }
-        private void finishChunksJob(object uselessparameter)
+        private List<Gallery> finishChunksJob()
         {
             Debug.WriteLine("Finishing Thread #" + Thread.CurrentThread.ManagedThreadId + " Started");
             ListDownloadProgress(ListDownloadProgressType.FinishingStarted, null);
@@ -129,7 +129,7 @@ namespace LibHitomi
                 list[i].UnNull();
             }
             Debug.WriteLine("Unnulled, Completed and Finished!");
-            ListDownloadCompleted(list);
+            return list;
         }
         private void downloadChunkJob(object _index)
         {
@@ -209,7 +209,9 @@ namespace LibHitomi
                 tasks.Add(Task.Factory.StartNew(downloadChunkJob, i));
             }
             await Task.WhenAll(tasks.ToArray());
-            finishChunksJob(null);
+            List<Gallery> result = null;
+            await Task.Factory.StartNew(finishChunksJob).ContinueWith((Task<List<Gallery>> Task) => { result = Task.Result; });
+            ListDownloadCompleted(result);
         }
     }
 }
