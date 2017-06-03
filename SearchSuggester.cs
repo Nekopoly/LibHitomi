@@ -12,6 +12,9 @@ namespace LibHitomi
     public delegate void InitializationCompletedDelegate();
     public delegate void InitializationStartedDelegate();
     public delegate void autoCompleteSuggestedDelegate(string[] results);
+    /// <summary>
+    /// 검색 쿼리를 입력받아 검색 제안을 제공합니다.
+    /// </summary>
     public class SearchSuggester
     {
         // These classes are used for deserialization
@@ -162,20 +165,45 @@ namespace LibHitomi
             string[] suggestions = suggest((string)query);
             Suggested(suggestions);
         }
+        /// <summary>
+        /// 초기화가 시작됐을때 호출됩니다.
+        /// </summary>
         public event InitializationStartedDelegate InitializationStarted;
+        /// <summary>
+        /// 초기화가 완료됐을때 호출됩니다.
+        /// </summary>
         public event InitializationCompletedDelegate InitializaitonCompleted;
+        /// <summary>
+        /// 검색 제안이 생성된 후에 호출됩니다.
+        /// </summary>
         public event autoCompleteSuggestedDelegate Suggested;
+        /// <summary>
+        /// 초기화 됐는지의 여부입니다.
+        /// </summary>
         public bool Initialized { get { return inited; } }
+        /// <summary>
+        /// 이 인스턴스를 초기화합니다.
+        /// </summary>
+        /// <param name="gallery">검색 제안 제공에 쓰일 모든 갤러리들의 목록입니다.</param>
         public void Init(Gallery[] gallery)
         {
             Thread thr = new Thread(init);
             thr.Start(gallery);
         }
+        /// <summary>
+        /// 비동기로 검색 제안을 생성합니다. 생성된 후엔 Suggested 이벤트가 발생됩니다.
+        /// </summary>
+        /// <param name="query">검색어</param>
         public void SuggestAsync(string query)
         {
             Thread thr = new Thread(suggestThread);
             thr.Start(query);
         }
+        /// <summary>
+        /// 동기적으로 검색 제안을 생성합니다.
+        /// </summary>
+        /// <param name="query">검색어</param>
+        /// <returns>생성된 검색 제안</returns>
         public string[] SuggestSync(string query)
         {
             return suggest(query);
