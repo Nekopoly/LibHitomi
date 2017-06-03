@@ -32,11 +32,7 @@ namespace LibHitomi
         /// <param name="galleries">검색 대상인 갤러리들</param>
         /// <param name="query">문자열로 된 검색어</param>
         /// <returns></returns>
-        public Gallery[] Search(List<Gallery> galleries, string query)
-        {
-            return search(galleries, query);
-        }
-        public Gallery[] search(List<Gallery> galleries, string query, string from = "")
+        public Gallery[] Search(List<Gallery> galleries, string query, string from = "")
         {
             if (query.Trim().Length == 0)
                 return galleries.ToArray();
@@ -105,7 +101,7 @@ namespace LibHitomi
                     List<Gallery> fromGalleries = FromQueryCalled(match, out success);
                     if (success && match != from)
                     {
-                        return search(fromGalleries, query, match);
+                        return Search(fromGalleries, query, match);
                     }
                     else
                     {
