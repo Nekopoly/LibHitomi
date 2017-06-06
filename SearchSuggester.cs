@@ -123,7 +123,7 @@ namespace LibHitomi
                         string match = lastThing.Split(':').Last().Trim().ToLower();
                         bool isExclusive = false;
 
-                        if(!everyNamespaces.Contains(ns))
+                        if(!everyNamespaces.Contains(ns) && !everyNamespaces.Select(i => "-" + i).Contains(ns))
                         {
                             foreach (string i in everyNamespaces)
                             {
@@ -136,8 +136,6 @@ namespace LibHitomi
                             isExclusive = true;
                             ns = ns.Substring(1);
                         }
-                        if (!everyNamespaces.Contains(ns))
-                            return new string[] { };
                         string[] simillarMatches = suggestions[ns].ToList().FindAll(new Predicate<string>((string i) =>
                         {
                             return i.ToLower().StartsWith(match); // Optimization for C# Textbox Autocomplete

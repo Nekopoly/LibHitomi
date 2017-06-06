@@ -162,6 +162,11 @@ namespace LibHitomi.Downloader
         public WhenTriedDuplicatedGallery WhenTriedDuplicatedGallery { get; set; } = WhenTriedDuplicatedGallery.ThrowException;
 
         /// <summary>
+        /// 다운로드할 디렉토리입니다.
+        /// </summary>
+        public string SaveDirectory { get { return saveDirectory; } }
+
+        /// <summary>
         /// 다운로드를 시작합니다.
         /// </summary>
         public void Start()
