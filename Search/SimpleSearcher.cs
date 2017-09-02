@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LibHitomi
+namespace LibHitomi.Search
 {
     public delegate List<Gallery> FromQueryCalledDelegate(string from, out bool success);
     /// <summary>
@@ -18,9 +18,9 @@ namespace LibHitomi
         }
     }
     /// <summary>
-    /// 문자열 형태의 검색어를 받아 갤러리 중에서 특정 조건에 부합하는 갤러리를 찾아냅니다.
+    /// 검색 쿼리를 받아 갤러리 중에서 특정 조건에 부합하는 갤러리를 찾아냅니다.
     /// </summary>
-    public class SimpleSearcher
+    public class Searcher
     {
         /// <summary>
         /// from 태그가 포함될 때 호출됩니다.
@@ -32,85 +32,79 @@ namespace LibHitomi
         /// <param name="galleries">검색 대상인 갤러리들</param>
         /// <param name="query">문자열로 된 검색어</param>
         /// <returns></returns>
+        [Obsolete()]
         public Gallery[] Search(List<Gallery> galleries, string query, string from = "")
         {
-            if (query.Trim().Length == 0)
+            HitomiQueryStringParser parser = new HitomiQueryStringParser();
+            return this.Search(galleries, parser.Parse(query), from);
+        }
+        /// <summary>
+        /// 검색을 수행합니다.
+        /// </summary>
+        /// <param name="galleries">검색 대상인 갤러리들</param>
+        /// <param name="query">QueryStringParser를 구현한 클래스에 의해 분석된 쿼리 데이터</param>
+        /// <returns></returns>
+        public Gallery[] Search(List<Gallery> galleries, IEnumerable<QueryEntry> query, string from = "")
+        {
+            if (query.Count() == 0)
                 return galleries.ToArray();
-            string[] splitted = query.Trim().Split(' ');
             List<Gallery> result = new List<Gallery>(galleries);
             int limit = -1;
-            foreach (string i in splitted)
+            string ns;
+            foreach (QueryEntry i in query)
             {
-                if (!i.Contains(':'))
-                    continue;
-                bool isExclusion = false;
-                string ns = i.Split(':')[0].ToLower();
-                string match = i.Split(':')[1].ToLower().Replace('_', ' ');
-                if(ns.StartsWith("-"))
-                {
-                    isExclusion = true;
-                    ns = ns.Substring(1);
-                }
-
-
-                if (ns == "male" || ns == "female")
-                {
-                    match = ns + ":" + match;
+                if (i.Namespace == TagNamespace.Tag)
                     ns = "Tags";
-                }
-                else if (ns == "tag")
-                    ns = "Tags";
-                else if (ns == "artist")
+                else if (i.Namespace == TagNamespace.Artist)
                     ns = "Artists";
-                else if (ns == "group" || ns == "circle")
+                else if (i.Namespace == TagNamespace.Group)
                     ns = "Groups";
-                else if (ns == "series" || ns == "parody")
+                else if (i.Namespace == TagNamespace.Series)
                     ns = "Parodies";
-                else if (ns == "character")
+                else if (i.Namespace == TagNamespace.Character)
                     ns = "Characters";
-                else if (ns == "language")
+                else if (i.Namespace == TagNamespace.Language)
                     ns = "Language";
-                else if (ns == "name" || ns == "title")
+                else if (i.Namespace == TagNamespace.Name)
                     ns = "Name";
-                else if (ns == "type")
+                else if (i.Namespace == TagNamespace.Type)
                     ns = "Type";
+                else if (i.Namespace == TagNamespace.LibHitomi_Id)
+                {
 #if SupportIdSelectQuery
-                else if (ns == "id")
-                {
-                    int parsedId = int.Parse(match);
+                    int parsedId = int.Parse(i.Query);
                     result.Add(galleries.Where((Gallery gallery) => { return gallery.id == parsedId; }).First());
+#endif
                     continue;
                 }
-#endif
-#if DEBUG && SupportDebugQuery
-                else if (ns == "debug")
+                else if (i.Namespace == TagNamespace.LibHitomi_Debug)
                 {
-                    if (match.StartsWith("clear"))
+#if DEBUG && SupportDebugQuery
+                    if (i.Query.StartsWith("clear"))
                         result.Clear();
-
+#endif
                     continue;
                 }
-#endif
-                else if (ns == "from")
+                else if (i.Namespace == TagNamespace.LibHitomi_From)
                 {
                     bool success = false;
                     if (FromQueryCalled == null)
                     {
                         continue;
                     }
-                    List<Gallery> fromGalleries = FromQueryCalled(match, out success);
-                    if (success && match != from)
+                    List<Gallery> fromGalleries = FromQueryCalled(i.Query, out success);
+                    if (success && i.Query != from)
                     {
-                        return Search(fromGalleries, query, match);
+                        return Search(fromGalleries, query, i.Query);
                     }
                     else
                     {
                         continue;
                     }
                 }
-                else if (ns == "limit")
+                else if (i.Namespace == TagNamespace.LibHitomi_Limit)
                 {
-                    limit = int.Parse(match);
+                    limit = int.Parse(i.Query);
                     continue;
                 }
                 else
@@ -119,36 +113,28 @@ namespace LibHitomi
                 // http://stackoverflow.com/a/1197004
                 result = result.FindAll(new Predicate<Gallery>((Gallery gallery) =>
                 {
-                    if (ns != "Name" && ns != "Language" && ns != "Type")
+                    if (i.isForArrayNamespace)
                     {
                         string[] values = (string[])gallery.GetType().GetProperty(ns).GetValue(gallery);
-                        if(match == "~~na~~")
+                        if(i.QueryType == QueryMatchType.NA)
                         {
                             return values.Length == 0;
                         }
                         foreach (string j in values)
                         {
-                            if (j.ToLower() == match.ToLower())
-                                return !isExclusion;
+                            if (j.ToLower() == i.Query.ToLower())
+                                return !i.isExclusion;
                         }
-                        return isExclusion;
+                        return i.isExclusion;
                     }
-                    else if (ns == "Name")
-                    {
-                        string name = gallery.Name.ToLower();
-                        if (match == "~~na~~") return name == "" || name == null;
-                        bool matched = name.Contains(match.ToLower());
-                        if (isExclusion) matched = !matched;
-                        return matched;
-                    } else if (ns == "Language" || ns == "Type")
+                    else
                     {
                         string gallval = (string)gallery.GetType().GetProperty(ns).GetValue(gallery);
-                        bool matched = gallval == match.ToLower();
-                        if (match == "~~na~~") return gallval == "" || gallval == null;
-                        if (isExclusion) matched = !matched;
+                        gallval = gallval.ToLower();
+                        if (i.QueryType == QueryMatchType.NA) return gallval == "" || gallval == null;
+                        bool matched = i.QueryType == QueryMatchType.Contains ? gallval.Contains(i.Query.ToLower()) : gallval == i.Query.ToLower();
+                        if (i.isExclusion) matched = !matched;
                         return matched;
-                    } else {
-                        throw new Exception("알 수 없는 네임스페이스입니다");
                     }
                 }));
             }
