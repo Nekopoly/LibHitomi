@@ -55,7 +55,11 @@ namespace LibHitomi.Search
         /// <summary>
         /// 검색결과 갯수 제한 쿼리
         /// </summary>
-        LibHitomi_Limit
+        LibHitomi_Limit,
+        /// <summary>
+        /// 검색결과 오프셋
+        /// </summary>
+        LibHitomi_Offset
     }
     /// <summary>
     /// 검색 쿼리 데이터입니다.

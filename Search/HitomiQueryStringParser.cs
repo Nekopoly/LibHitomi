@@ -59,6 +59,8 @@ namespace LibHitomi.Search
                     entry.Namespace = TagNamespace.LibHitomi_From;
                 else if (ns == "limit")
                     entry.Namespace = TagNamespace.LibHitomi_Limit;
+                else if (ns == "offset")
+                    entry.Namespace = TagNamespace.LibHitomi_Offset;
                 else
                     continue;
                 entry.isExclusion = isExclusion;

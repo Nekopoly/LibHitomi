@@ -49,7 +49,7 @@ namespace LibHitomi.Search
             if (query.Count() == 0)
                 return galleries.ToArray();
             List<Gallery> result = new List<Gallery>(galleries);
-            int limit = -1;
+            int limit = -1, offset = -1;
             string ns;
             foreach (QueryEntry i in query)
             {
@@ -107,6 +107,11 @@ namespace LibHitomi.Search
                     limit = int.Parse(i.Query);
                     continue;
                 }
+                else if (i.Namespace == TagNamespace.LibHitomi_Offset)
+                {
+                    offset = int.Parse(i.Query);
+                    continue;
+                }
                 else
                     throw new InvalidQueryException();
 
@@ -137,6 +142,10 @@ namespace LibHitomi.Search
                         return matched;
                     }
                 }));
+            }
+            if (offset > 0)
+            {
+                result = new List<Gallery>(result.Skip(offset));
             }
             if (limit > 0)
             {
