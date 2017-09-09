@@ -104,12 +104,12 @@ namespace LibHitomi.Search
                 }
                 else if (i.Namespace == TagNamespace.LibHitomi_Limit)
                 {
-                    limit = int.Parse(i.Query);
+                    if(int.TryParse(i.Query, out int temp)) limit = temp;
                     continue;
                 }
                 else if (i.Namespace == TagNamespace.LibHitomi_Offset)
                 {
-                    offset = int.Parse(i.Query);
+                    if (int.TryParse(i.Query, out int temp)) offset = temp;
                     continue;
                 }
                 else
