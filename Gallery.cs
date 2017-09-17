@@ -62,8 +62,10 @@ namespace LibHitomi
                 serializer.Formatting = Formatting.None;
                 serializer.MissingMemberHandling = MissingMemberHandling.Ignore;
                 serializer.NullValueHandling = NullValueHandling.Ignore;
-                serializer.Serialize(sw, new List<Gallery>(galleries));
+#if DEBUG
                 serializer.TraceWriter = new Newtonsoft.Json.Serialization.DiagnosticsTraceWriter();
+#endif
+                serializer.Serialize(sw, new List<Gallery>(galleries));
             }
         }
 
