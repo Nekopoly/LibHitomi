@@ -54,12 +54,16 @@ namespace LibHitomi
             => getImageNumbs(galleryId)
             .Select(n => RequestHelper.CreateUrl(DownloadOptions.ThumbnailSubdomain, $"/smalltn/{galleryId}/{n}.jpg")).ToArray();
 
-        public static void DeserializeToJson(Gallery[] galleries, Stream stream)
+        public static void SerializeToJson(IEnumerable<Gallery> galleries, Stream stream)
         {
             using (StreamWriter sw = new StreamWriter(stream))
             {
                 JsonSerializer serializer = new JsonSerializer();
-                serializer.Serialize(sw, galleries);
+                serializer.Formatting = Formatting.None;
+                serializer.MissingMemberHandling = MissingMemberHandling.Ignore;
+                serializer.NullValueHandling = NullValueHandling.Ignore;
+                serializer.Serialize(sw, new List<Gallery>(galleries));
+                serializer.TraceWriter = new Newtonsoft.Json.Serialization.DiagnosticsTraceWriter();
             }
         }
 
