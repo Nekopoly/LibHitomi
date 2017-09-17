@@ -7,6 +7,7 @@ using System.IO;
 using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace LibHitomi
 {
@@ -63,9 +64,11 @@ namespace LibHitomi
                 serializer.MissingMemberHandling = MissingMemberHandling.Ignore;
                 serializer.NullValueHandling = NullValueHandling.Ignore;
 #if DEBUG
-                serializer.TraceWriter = new Newtonsoft.Json.Serialization.DiagnosticsTraceWriter();
+                DiagnosticsTraceWriter tw = new DiagnosticsTraceWriter();
+                tw.LevelFilter = System.Diagnostics.TraceLevel.Verbose;
+                serializer.TraceWriter = tw;
 #endif
-                serializer.Serialize(sw, new List<Gallery>(galleries));
+                serializer.Serialize(sw, galleries.ToArray());
             }
         }
 
