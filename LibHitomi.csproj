@@ -54,6 +54,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Database\DatabaseWriter.cs" />
     <Compile Include="Downloader\ContinuousDownloader.cs" />
     <Compile Include="Downloader\AnimeDownloadJob.cs" />
     <Compile Include="Downloader\Delegates.cs" />
