@@ -20,7 +20,7 @@ namespace LibHitomi.Database
             using (OdbcConnection connection = new OdbcConnection(connectionString))
             using (OdbcTransaction transaction = connection.BeginTransaction())
             {
-                OdbcCommand comm = new OdbcCommand("CREATE TABLE (Id int PRIMARY KEY, Name varchar(1024), Language varchar(1024), CrawlMethod varchar(1024), Type varchar(1024) NOT NULL, VideoFilename varchar(1024), VideoGalleryId varchar(1024))" + (ifNotExists ? " IF NOT EXISTS" : ""), connection, transaction);
+                OdbcCommand comm = new OdbcCommand("CREATE TABLE (Id int PRIMARY KEY, Name varchar(1024), Language varchar(1024), CrawlMethod int, Type varchar(1024) NOT NULL, VideoFilename varchar(1024), VideoGalleryId int)" + (ifNotExists ? " IF NOT EXISTS" : ""), connection, transaction);
                 comm.ExecuteNonQuery();
                 foreach (string tableName in new string[] { "Galleries", "Artists", "Characters", "Groups", "Parodies", "Tags" })
                 {

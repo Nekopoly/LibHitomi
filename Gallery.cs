@@ -113,9 +113,9 @@ namespace LibHitomi
         [JsonProperty(PropertyName = "n")]
         internal string name;
         [JsonProperty(PropertyName = "videofilename")]
-        private string videoFilename;
+        internal string videoFilename;
         [JsonProperty(PropertyName = "videogalleryid")]
-        private int videoGalleryId;
+        internal int videoGalleryId;
         [JsonProperty(PropertyName = "id")]
         internal int id;
 
