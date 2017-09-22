@@ -132,7 +132,7 @@ namespace LibHitomi.Database
                             }
                             using (OdbcCommand comm = new OdbcCommand(sqlQuery, conn))
                             {
-                                comm.Parameters.Add(new OdbcParameter("match", tableName));
+                                comm.Parameters.Add(new OdbcParameter("match", i.Query));
                                 using (OdbcDataAdapter adapter = new OdbcDataAdapter(comm))
                                 using (DataSet ds = new DataSet())
                                 {
@@ -164,8 +164,34 @@ namespace LibHitomi.Database
                         case TagNamespace.Name:
                         case TagNamespace.Type:
                         case TagNamespace.Language:
-                            // TO-DO : Implement this
-                            throw new NotImplementedException();
+                            string propName = Enum.GetName(typeof(TagNamespace), TagNamespace.Tag);
+                            string giSqlQuery;
+                            switch (i.QueryType)
+                            {
+                                case QueryMatchType.Equals:
+                                    giSqlQuery = "SELECT id FROM Galleries WHERE " + propName + " = @match";
+                                    break;
+                                case QueryMatchType.Contains:
+                                    giSqlQuery = "SELECT id FROM Galleries WHERE " + propName + " = '%' + @match + '%'";
+                                    break;
+                                case QueryMatchType.NA:
+                                    giSqlQuery = "SELECT id FROM Galleries WHERE " + propName + " =  NULL OR " + propName + " = ''";
+                                    break;
+                                default:
+                                    throw new Exception("QueryType not specified!");
+                            }
+                            using (OdbcCommand comm = new OdbcCommand(giSqlQuery, conn))
+                            {
+                                comm.Parameters.Add(new OdbcParameter("match", i.Query));
+                                using (OdbcDataAdapter adapter = new OdbcDataAdapter(comm))
+                                using (DataSet ds = new DataSet())
+                                {
+                                    adapter.Fill(ds, "Galleries");
+                                    entryResult = new List<int>(ds.Tables["Galleries"]
+                                        .AsEnumerable()
+                                        .Select(j => j.Field<int>("Value")));
+                                }
+                            }
                             break;
                     }
                     if (firstEntry)
@@ -181,6 +207,7 @@ namespace LibHitomi.Database
                         result = new List<int>(result.Intersect(entryResult));
                     }
                 }
+                return result;
             }
         }
     }
