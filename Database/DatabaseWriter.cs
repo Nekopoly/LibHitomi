@@ -73,6 +73,7 @@ namespace LibHitomi.Database
                     InsertSubItmes(gallery.id, "Parodies", gallery.Parodies, connection, transaction);
                     InsertSubItmes(gallery.id, "Tags", gallery.Tags, connection, transaction);
                 }
+                transaction.Commit();
             }
         }
         private void InsertSubItmes(int galleryId, string tableName, IEnumerable<string> items, OdbcConnection connection, OdbcTransaction transaction)
