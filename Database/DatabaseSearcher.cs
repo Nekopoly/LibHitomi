@@ -4,8 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Data;
-using System.Data.Odbc;
 using LibHitomi.Search;
+using MySql.Data;
+using MySql.Data.MySqlClient;
+
 namespace LibHitomi.Database
 {
     /// <summary>
@@ -29,12 +31,15 @@ namespace LibHitomi.Database
         /// <returns></returns>
         public bool HasGalleryId(int id)
         {
-            using (OdbcConnection conn = new OdbcConnection(connectionString))
-            using (OdbcCommand comm = new OdbcCommand("SELECT COUNT(*) FROM Galleries WHERE Id = @Id", conn))
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
-                comm.CommandType = CommandType.Text;
-                comm.Parameters.Add(new OdbcParameter("@Id", id));
-                return (int)comm.ExecuteScalar() > 0;
+                conn.Open();
+                using (MySqlCommand comm = new MySqlCommand("SELECT COUNT(*) FROM Galleries WHERE Id = @Id", conn))
+                {
+                    comm.CommandType = CommandType.Text;
+                    comm.Parameters.Add(new MySqlParameter("@Id", id));
+                    return (int)comm.ExecuteScalar() > 0;
+                }
             }
         }
         /// <summary>
@@ -45,44 +50,47 @@ namespace LibHitomi.Database
         public IEnumerable<Gallery> GetGalleriesById(IEnumerable<int> ids)
         {
             string sqlCondition = string.Join(" OR ", ids.Select(v => "Id = " + v));
-            using (OdbcConnection conn = new OdbcConnection(connectionString))
-            using (OdbcCommand comm = new OdbcCommand("SELECT * FROM Galleries WHERE " + sqlCondition))
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
-                // get Gallery info
-                DataSet dataSet = new DataSet();
-                OdbcDataAdapter adapter = new OdbcDataAdapter(comm);
-                adapter.Fill(dataSet, "Galleries");
-                foreach (string i in new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" })
+                conn.Open();
+                using (MySqlCommand comm = new MySqlCommand("SELECT * FROM Galleries WHERE " + sqlCondition))
                 {
-                    OdbcCommand subComm = new OdbcCommand("SELECT * FROM " + i + " WHERE " + sqlCondition);
-                    OdbcDataAdapter subAdapter = new OdbcDataAdapter(subComm);
-                    subAdapter.Fill(dataSet, i);
-                }
-                // make Object
-                foreach(int id in sqlCondition)
-                {
-                    foreach (var i in from j in dataSet.Tables["Galleries"].AsEnumerable() where j.Field<int>("id") == id select j)
+                    // get Gallery info
+                    DataSet dataSet = new DataSet();
+                    MySqlDataAdapter adapter = new MySqlDataAdapter(comm);
+                    adapter.Fill(dataSet, "Galleries");
+                    foreach (string i in new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" })
                     {
-                        //(Id, Language, Name, CrawlMethod, Type, VideoFilename, VideoGalleryId)
-                        Gallery gallery = new Gallery((GalleryCrawlMethod)i.Field<int>("CrawlMethod"));
-                        gallery.id = i.Field<int>("Id");
-                        gallery.language = i.Field<string>("Language");
-                        gallery.name = i.Field<string>("Name");
-                        gallery.type = i.Field<string>("Type");
-                        gallery.videoFilename = i.Field<string>("VideoFilename");
-                        gallery.videoGalleryId = i.Field<int>("VideoGalleryId");
-                        Type galleryType = gallery.GetType();
-                        foreach (string j in new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" })
+                        MySqlCommand subComm = new MySqlCommand("SELECT * FROM " + i + " WHERE " + sqlCondition);
+                        MySqlDataAdapter subAdapter = new MySqlDataAdapter(subComm);
+                        subAdapter.Fill(dataSet, i);
+                    }
+                    // make Object
+                    foreach (int id in sqlCondition)
+                    {
+                        foreach (var i in from j in dataSet.Tables["Galleries"].AsEnumerable() where j.Field<int>("id") == id select j)
                         {
-                            List<int> temp = new List<int>();
-                            foreach (var k in from g in dataSet.Tables[j].AsEnumerable() where g.Field<int>("id") == id select g)
+                            //(Id, Language, Name, CrawlMethod, Type, VideoFilename, VideoGalleryId)
+                            Gallery gallery = new Gallery((GalleryCrawlMethod)i.Field<int>("CrawlMethod"));
+                            gallery.id = i.Field<int>("Id");
+                            gallery.language = i.Field<string>("Language");
+                            gallery.name = i.Field<string>("Name");
+                            gallery.type = i.Field<string>("Type");
+                            gallery.videoFilename = i.Field<string>("VideoFilename");
+                            gallery.videoGalleryId = i.Field<int>("VideoGalleryId");
+                            Type galleryType = gallery.GetType();
+                            foreach (string j in new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" })
                             {
-                                temp.Add(k.Field<int>("Value"));
+                                List<int> temp = new List<int>();
+                                foreach (var k in from g in dataSet.Tables[j].AsEnumerable() where g.Field<int>("id") == id select g)
+                                {
+                                    temp.Add(k.Field<int>("Value"));
+                                }
+                                galleryType.GetField(j.ToLower(), System.Reflection.BindingFlags.NonPublic).SetValue(gallery, temp.ToArray());
                             }
-                            galleryType.GetField(j.ToLower(), System.Reflection.BindingFlags.NonPublic).SetValue(gallery, temp.ToArray());
+                            gallery.UnNull();
+                            yield return gallery;
                         }
-                        gallery.UnNull();
-                        yield return gallery;
                     }
                 }
             }
@@ -97,8 +105,9 @@ namespace LibHitomi.Database
             List<int> result = new List<int>();
             int? limit, offset;
             bool firstEntry = true;
-            using(OdbcConnection conn = new OdbcConnection(connectionString))
+            using(MySqlConnection conn = new MySqlConnection(connectionString))
             {
+                conn.Open();
                 foreach (QueryEntry i in query)
                 {
                     List<int> entryResult = new List<int>();
@@ -130,10 +139,10 @@ namespace LibHitomi.Database
                                 default:
                                     throw new Exception("QueryType not specified!");
                             }
-                            using (OdbcCommand comm = new OdbcCommand(sqlQuery, conn))
+                            using (MySqlCommand comm = new MySqlCommand(sqlQuery, conn))
                             {
-                                comm.Parameters.Add(new OdbcParameter("match", i.Query));
-                                using (OdbcDataAdapter adapter = new OdbcDataAdapter(comm))
+                                comm.Parameters.Add(new MySqlParameter("match", i.Query));
+                                using (MySqlDataAdapter adapter = new MySqlDataAdapter(comm))
                                 using (DataSet ds = new DataSet())
                                 {
                                     adapter.Fill(ds, tableName);
@@ -180,10 +189,10 @@ namespace LibHitomi.Database
                                 default:
                                     throw new Exception("QueryType not specified!");
                             }
-                            using (OdbcCommand comm = new OdbcCommand(giSqlQuery, conn))
+                            using (MySqlCommand comm = new MySqlCommand(giSqlQuery, conn))
                             {
-                                comm.Parameters.Add(new OdbcParameter("match", i.Query));
-                                using (OdbcDataAdapter adapter = new OdbcDataAdapter(comm))
+                                comm.Parameters.Add(new MySqlParameter("match", i.Query));
+                                using (MySqlDataAdapter adapter = new MySqlDataAdapter(comm))
                                 using (DataSet ds = new DataSet())
                                 {
                                     adapter.Fill(ds, "Galleries");

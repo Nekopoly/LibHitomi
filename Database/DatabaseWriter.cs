@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Data;
-using System.Data.Odbc;
+using System.IO;
+using MySql.Data;
+using MySql.Data.MySqlClient;
 
 namespace LibHitomi.Database
 {
@@ -28,15 +30,22 @@ namespace LibHitomi.Database
         /// <param name="ifNotExists">존재하지 않는 경우에만 생성할 지의 여부입니다.</param>
         public void CreateTables(bool ifNotExists = true)
         {
-            using (OdbcConnection connection = new OdbcConnection(connectionString))
-            using (OdbcTransaction transaction = connection.BeginTransaction())
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
-                OdbcCommand comm = new OdbcCommand("CREATE TABLE (Id int PRIMARY KEY, Name varchar(1024), Language varchar(1024), CrawlMethod int, Type varchar(1024) NOT NULL, VideoFilename varchar(1024), VideoGalleryId int)" + (ifNotExists ? " IF NOT EXISTS" : ""), connection, transaction);
-                comm.ExecuteNonQuery();
-                foreach (string tableName in new string[] { "Galleries", "Artists", "Characters", "Groups", "Parodies", "Tags" })
+                connection.Open();
+                using (MySqlTransaction transaction = connection.BeginTransaction())
                 {
-                    OdbcCommand subcomm = new OdbcCommand("CREATE TABLE (Id int, Value varchar(1024))" + (ifNotExists ? " IF NOT EXISTS" : ""), connection, transaction);
-                    subcomm.ExecuteNonQuery();
+                    string query = "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + "Galleries (Id int PRIMARY KEY, Name varchar(1024), Language varchar(1024), CrawlMethod int, Type varchar(1024) NOT NULL, VideoFilename varchar(1024), VideoGalleryId int)";
+                    Console.WriteLine("SQL Query Executing : " + query);
+                    MySqlCommand comm = new MySqlCommand(query, connection, transaction);
+                    comm.ExecuteNonQuery();
+                    foreach (string tableName in new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" })
+                    {
+                        Console.WriteLine("SQL Query Executing : " + query);
+                        query = "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + tableName + " (Id int, Value varchar(1024))";
+                        MySqlCommand subcomm = new MySqlCommand(query, connection, transaction);
+                        subcomm.ExecuteNonQuery();
+                    }
                 }
             }
         }
@@ -47,50 +56,80 @@ namespace LibHitomi.Database
         /// <param name="dropAll">기록 전 모든 테이블에서 데이터를 삭제할 지의 여부입니다.</param>
         public void WriteToDatabases(IEnumerable<Gallery> galleries, bool dropAll = true)
         {
-            using (OdbcConnection connection = new OdbcConnection(connectionString))
-            using (OdbcTransaction transaction = connection.BeginTransaction())
+            string[] subTables = new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" };
+            string galleriesQuery = buildGalleryInsertQuery(galleries);
+            Console.WriteLine("Built gallery insert query");
+            Dictionary<string, string> subTableQueries = new Dictionary<string, string>();
+            foreach(string i in subTables)
             {
-                if(dropAll)
-                    foreach (string tableName in new string[] { "Galleries", "Artists", "Characters", "Groups", "Parodies", "Tags"})
-                        DeleteAllFromTable(tableName, connection, transaction);
-                foreach (Gallery gallery in galleries)
+                subTableQueries[i] = buildSubTableQuery(galleries, i);
+                Console.WriteLine($"Built {i} insert query");
+            }
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                Console.WriteLine("Openning connection");
+                connection.Open();
+                using (MySqlTransaction transaction = connection.BeginTransaction(IsolationLevel.Serializable))
                 {
-                    // Id, Language, Name, CrawlMethod, Type
-                    // VideoFilename, VideoGalleryId
-                    OdbcCommand comm = new OdbcCommand("INSERT INTO Galleries (Id, Language, Name, CrawlMethod, Type, VideoFilename, VideoGalleryId) VALUES (@Id, @Language, @Name, @CrawlMethod, @Type, @VideoFilename, @VideoGalleryId)", connection, transaction);
-                    comm.Parameters.Add(new OdbcParameter("@Id", gallery.Id));
-                    comm.Parameters.Add(new OdbcParameter("@Language", gallery.Language));
-                    comm.Parameters.Add(new OdbcParameter("@Name", gallery.Name));
-                    comm.Parameters.Add(new OdbcParameter("@CrawlMethod", gallery.GalleryCrawlMethod));
-                    comm.Parameters.Add(new OdbcParameter("@Type", gallery.Type));
-                    comm.Parameters.Add(new OdbcParameter("@VideoFilename", gallery.VideoFilename));
-                    comm.Parameters.Add(new OdbcParameter("@VideoGalleryId", gallery.VideoGalleryId));
-                    comm.ExecuteNonQuery();
-                    // Artist, Character, Group, Parodies, Tags
-                    InsertSubItmes(gallery.id, "Artists", gallery.Artists, connection, transaction);
-                    InsertSubItmes(gallery.id, "Characters", gallery.Characters, connection, transaction);
-                    InsertSubItmes(gallery.id, "Groups", gallery.Groups, connection, transaction);
-                    InsertSubItmes(gallery.id, "Parodies", gallery.Parodies, connection, transaction);
-                    InsertSubItmes(gallery.id, "Tags", gallery.Tags, connection, transaction);
+                    if (dropAll)
+                        foreach (string tableName in new string[] { "Galleries", "Artists", "Characters", "Groups", "Parodies", "Tags" })
+                            DeleteAllFromTable(tableName, connection, transaction);
+                    foreach (string i in new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" })
+                    {
+                        MySqlCommand loadComm = new MySqlCommand(subTableQueries[i], connection, transaction);
+                        int sresultCount = loadComm.ExecuteNonQuery();
+                        Console.WriteLine($"Inserted {sresultCount} rows into {i} Table");
+                    }
+                    MySqlCommand comm = new MySqlCommand(galleriesQuery, connection, transaction);
+                    int gresultCount = comm.ExecuteNonQuery();
+                    Console.WriteLine($"Inserted {gresultCount} rows into Galleries Table");
+                    transaction.Commit();
                 }
-                transaction.Commit();
             }
+            Console.WriteLine("Closed connection");
         }
-        private void InsertSubItmes(int galleryId, string tableName, IEnumerable<string> items, OdbcConnection connection, OdbcTransaction transaction)
+        private string buildGalleryInsertQuery(IEnumerable<Gallery> galleries)
         {
-            if (items.Count() == 0)
-                return;
-            foreach (string value in items)
+            List<string> items = new List<string>();
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("INSERT INTO Galleries (Id, Language, Name, CrawlMethod, Type, VideoFilename, VideoGalleryId) VALUES ");
+            foreach(Gallery gallery in galleries)
             {
-                OdbcCommand comm = new OdbcCommand("INSERT INTO " + tableName + "(Id, Value) VALUES (@Id, @Value)", connection, transaction);
-                comm.Parameters.Add(new OdbcParameter("@Id", galleryId));
-                comm.Parameters.Add(new OdbcParameter("@Value", value));
-                comm.ExecuteNonQuery();
+                items.Add(string.Format("({0},{1},{2},{3},{4},{5},{6})",
+                    gallery.Id,
+                    gallery.Language == null ? "NULL" : "'" + MySqlHelper.EscapeString(gallery.Language) + "'",
+                    gallery.Name == null ? "NULL" : "'" + MySqlHelper.EscapeString(gallery.Name) + "'",
+                    (int)gallery.GalleryCrawlMethod,
+                    gallery.Type == null ? "NULL" : "'" + MySqlHelper.EscapeString(gallery.Type) + "'",
+                    gallery.VideoFilename == null ? "NULL" : "'" + MySqlHelper.EscapeString(gallery.VideoFilename) + "'",
+                    gallery.VideoGalleryId
+                    ));
             }
-        }
-        private void DeleteAllFromTable(string tableName, OdbcConnection connection, OdbcTransaction transaction)
+            stringBuilder.Append(string.Join(",", items));
+            return stringBuilder.ToString();
+            }
+        private string buildSubTableQuery(IEnumerable<Gallery> galleries, string tableName)
         {
-            OdbcCommand comm = new OdbcCommand($"DELETE * FROM {tableName}", connection, transaction);
+            List<string> queryItems = new List<string>();
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append($"INSERT INTO {tableName} (Id, Value) VALUES ");
+            foreach (Gallery gallery in galleries)
+            {
+                int id = gallery.Id;
+                object wrapped = gallery.GetType().GetProperty(tableName).GetValue(gallery);
+                if (wrapped == null) continue;
+                string[] items = (string[])wrapped;
+                foreach(string i in items)
+                {
+                    queryItems.Add($"({gallery.Id},'{MySqlHelper.EscapeString(i)}')");
+                }
+            }
+            stringBuilder.Append(string.Join(",", queryItems));
+            return stringBuilder.ToString();
+        }
+        private void DeleteAllFromTable(string tableName, MySqlConnection connection, MySqlTransaction transaction)
+        {
+            MySqlCommand comm = new MySqlCommand($"TRUNCATE TABLE {tableName}", connection, transaction);
             comm.ExecuteNonQuery();
         }
     }
