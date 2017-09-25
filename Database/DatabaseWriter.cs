@@ -50,6 +50,57 @@ namespace LibHitomi.Database
             }
         }
         /// <summary>
+        /// 갤러리 정보들을 삽입하는 SQL 코드를 만들어 반환합니다.
+        /// </summary>
+        /// <param name="galleries">기록할 갤러리들입니다.</param>
+        /// <param name="dropAll">기록 전 모든 테이블에서 데이터를 삭제할 지의 여부입니다.</param>
+        /// <returns></returns>
+        public string BuildSQL(IEnumerable<Gallery> galleries, bool dropAll = true)
+        {
+            StringBuilder builder = new StringBuilder();
+            string[] subTables = new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" };
+            if (dropAll)
+            {
+                foreach (string i in subTables.Concat(new string[] { "Galleries" }))
+                {
+                    builder.AppendLine($"TRUNCATE TABLE {i};");
+                }
+            }
+            builder.Append(buildGalleryInsertQuery(galleries));
+            builder.AppendLine(";");
+            foreach (string i in subTables)
+            {
+                builder.Append(buildSubTableQuery(galleries, i));
+                builder.AppendLine(";");
+            }
+            return builder.ToString();
+        }
+        /// <summary>
+        /// 갤러리 정보들을 삽입하는 SQL 코드를 만들어 스트림에 기록합니다.
+        /// </summary>
+        /// <param name="galleries">기록할 갤러리들입니다.</param>
+        /// <param name="dropAll">기록 전 모든 테이블에서 데이터를 삭제할 지의 여부입니다.</param>
+        /// <param name="writer">SQL이 기록될 스트림입니다.</param>
+        /// <returns></returns>
+        public void BuildSQL(IEnumerable<Gallery> galleries, StreamWriter writer, bool dropAll = true)
+        {
+            string[] subTables = new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" };
+            if (dropAll)
+            {
+                foreach (string i in subTables.Concat(new string[] { "Galleries" }))
+                {
+                    writer.WriteLine($"TRUNCATE TABLE {i};");
+                }
+            }
+            writer.Write(buildGalleryInsertQuery(galleries));
+            writer.WriteLine(";");
+            foreach (string i in subTables)
+            {
+                writer.Write(buildSubTableQuery(galleries, i));
+                writer.WriteLine(";");
+            }
+        }
+        /// <summary>
         /// 데이터베이스에 갤러리들을 기록합니다.
         /// </summary>
         /// <param name="galleries">기록할 갤러리들입니다.</param>
