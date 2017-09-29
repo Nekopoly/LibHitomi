@@ -13,6 +13,7 @@ namespace LibHitomi.Database
     /// <summary>
     /// 데이터베이스에서 작품들을 검색합니다. ADO.NET Connector의 설치가 필요할 수 있습니다.
     /// </summary>
+    [Obsolete("테스트 안 해봐서 되는 지 안 되는지 모릅니다.")]
     class DatabaseSearcher
     {
         private string connectionString;
