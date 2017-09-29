@@ -16,7 +16,7 @@ namespace LibHitomi.Search
                 string i = splitted[_i];
                 if (!i.Contains(':'))
                     continue;
-                while(splitted[_i + 1].Contains(':'))
+                while(_i < splitted.Length - 1 && !splitted[_i + 1].Contains(':'))
                 {
                     i += " " + splitted[++_i];
                 }
