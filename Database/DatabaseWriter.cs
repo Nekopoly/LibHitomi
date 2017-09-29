@@ -35,14 +35,14 @@ namespace LibHitomi.Database
                 connection.Open();
                 using (MySqlTransaction transaction = connection.BeginTransaction())
                 {
-                    string query = "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + "Galleries (Id int PRIMARY KEY, Name varchar(1024), Language varchar(1024), CrawlMethod int, Type varchar(1024) NOT NULL, VideoFilename varchar(1024), VideoGalleryId int)";
+                    string query = "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + "Galleries (Id int PRIMARY KEY, Name varchar(1024), Language varchar(1024), CrawlMethod int, Type varchar(1024) NOT NULL, VideoFilename varchar(1024), VideoGalleryId int) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
                     Console.WriteLine("SQL Query Executing : " + query);
                     MySqlCommand comm = new MySqlCommand(query, connection, transaction);
                     comm.ExecuteNonQuery();
                     foreach (string tableName in new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" })
                     {
                         Console.WriteLine("SQL Query Executing : " + query);
-                        query = "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + tableName + " (Id int, Value varchar(1024))";
+                        query = "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + tableName + " (Id int, Value varchar(1024)) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
                         MySqlCommand subcomm = new MySqlCommand(query, connection, transaction);
                         subcomm.ExecuteNonQuery();
                     }
@@ -57,23 +57,15 @@ namespace LibHitomi.Database
         /// <returns></returns>
         public string BuildSQL(IEnumerable<Gallery> galleries, bool dropAll = true)
         {
-            StringBuilder builder = new StringBuilder();
-            string[] subTables = new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" };
-            if (dropAll)
+            using (MemoryStream ms = new MemoryStream())
             {
-                foreach (string i in subTables.Concat(new string[] { "Galleries" }))
+                using (StreamWriter sw = new StreamWriter(ms, Encoding.UTF8))
+                    BuildSQL(galleries, sw, dropAll);
+                using (StreamReader sr = new StreamReader(ms, Encoding.UTF8))
                 {
-                    builder.AppendLine($"TRUNCATE TABLE {i};");
+                    return sr.ReadToEnd();
                 }
             }
-            builder.Append(buildGalleryInsertQuery(galleries));
-            builder.AppendLine(";");
-            foreach (string i in subTables)
-            {
-                builder.Append(buildSubTableQuery(galleries, i));
-                builder.AppendLine(";");
-            }
-            return builder.ToString();
         }
         /// <summary>
         /// 갤러리 정보들을 삽입하는 SQL 코드를 만들어 스트림에 기록합니다.
@@ -85,6 +77,7 @@ namespace LibHitomi.Database
         public void BuildSQL(IEnumerable<Gallery> galleries, StreamWriter writer, bool dropAll = true)
         {
             string[] subTables = new string[] { "Artists", "Characters", "Groups", "Parodies", "Tags" };
+            writer.WriteLine("BEGIN;");
             if (dropAll)
             {
                 foreach (string i in subTables.Concat(new string[] { "Galleries" }))
@@ -99,6 +92,7 @@ namespace LibHitomi.Database
                 writer.Write(buildSubTableQuery(galleries, i));
                 writer.WriteLine(";");
             }
+            writer.WriteLine("COMMIT;");
         }
         /// <summary>
         /// 데이터베이스에 갤러리들을 기록합니다.
