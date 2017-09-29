@@ -41,10 +41,18 @@ namespace LibHitomi.Downloader
             using (WebResponse wres = wreq.GetResponse())
             using (Stream str = wres.GetResponseStream())
             using (FileStream fstr = new FileStream(filePath, FileMode.Create, FileAccess.Write))
-                str.CopyTo(fstr);
-
-            DownloadProgress(this, ProgressEventTypes.SetProgressBarValue, 100);
-            DownloadProgress(this, ProgressEventTypes.ToggleProgressMarquee, false);
+            {
+                int received;
+                const int bufferSize = 81920;
+                byte[] buffer = new byte[bufferSize];
+                DownloadProgress(this, ProgressEventTypes.IncreaseProgressBar, wres.ContentLength);
+                DownloadProgress(this, ProgressEventTypes.SetProgressBarValue, 0);
+                while ((received = str.Read(buffer, 0, buffer.Length)) != 0)
+                {
+                    fstr.Write(buffer, 0, received);
+                    DownloadProgress(this, ProgressEventTypes.IncreaseProgressBar, received);
+                }
+            }
             isCompleted = true;
             DownloadCompleted(this);
         }

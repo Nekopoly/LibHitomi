@@ -11,10 +11,15 @@ namespace LibHitomi.Search
         public override IEnumerable<QueryEntry> Parse(string query)
         {
             string[] splitted = query.Trim().Split(' ');
-            foreach (string i in splitted)
+            for (int _i = 0; _i < splitted.Length; _i++)
             {
+                string i = splitted[_i];
                 if (!i.Contains(':'))
                     continue;
+                while(splitted[_i + 1].Contains(':'))
+                {
+                    i += " " + splitted[++_i];
+                }
                 QueryEntry entry = new QueryEntry();
                 bool isExclusion = false;
                 string ns = i.Split(':')[0].ToLower();
@@ -24,8 +29,6 @@ namespace LibHitomi.Search
                     isExclusion = true;
                     ns = ns.Substring(1);
                 }
-
-
                 if (ns == "male" || ns == "female")
                 {
                     match = ns + ":" + match;

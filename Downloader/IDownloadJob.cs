@@ -15,7 +15,7 @@ namespace LibHitomi.Downloader
         /// </summary>
         ToggleProgressMarquee,
         /// <summary>
-        /// ProgressBar의 Value 속성값을 1 올려야 할때 발생합니다. 매개변수는 없습니다.
+        /// ProgressBar의 Value 속성값을 올려야 할때 발생합니다. 매개변수가 없을 시 1로 간주됩니다.
         /// </summary>
         IncreaseProgressBar,
         /// <summary>
