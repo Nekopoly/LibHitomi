@@ -131,14 +131,17 @@ namespace LibHitomi
             Debug.WriteLine("Unnulled, Completed and Finished!");
             return list;
         }
-        private void downloadChunkJob(object _index)
+        private async Task downloadChunkJob(object _index)
         {
-            int index = (int)_index;
-            Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + ", Working with " + index + "st chunk(zero-based)");
-            Gallery[] chunk = getChunk(index, true);
-            chunks.Add(index, chunk);
-            Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + "," + index + "st chunk(zero-based) has " + chunk.Length + " galleries and it's added");
-            return;
+            await Task.Run(() =>
+            {
+                int index = (int)_index;
+                Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + ", Working with " + index + "st chunk(zero-based)");
+                Gallery[] chunk = getChunk(index, true);
+                chunks.Add(index, chunk);
+                Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + "," + index + "st chunk(zero-based) has " + chunk.Length + " galleries and it's added");
+                return;
+            });
         }
 
         /// <summary>
@@ -206,7 +209,7 @@ namespace LibHitomi
             List<Task> tasks = new List<Task>();
             for(var i = 0; i < chunkCnt; i++)
             {
-                tasks.Add(Task.Factory.StartNew(downloadChunkJob, i));
+                tasks.Add(downloadChunkJob(i));
             }
             await Task.WhenAll(tasks.ToArray());
             List<Gallery> result = null;
