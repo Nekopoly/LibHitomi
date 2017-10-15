@@ -49,10 +49,8 @@ namespace LibHitomi
     /// <summary>
     /// 갤러리 목록 전체를 다운로드합니다.
     /// </summary>
-    public class ListDownloader
+    public class ListDownloader : ListDownloaderBase
     {
-        private string searchlibUrl = RequestHelper.CreateUrl(DownloadOptions.JsonSubdomain, "/searchlib.js");
-        private Regex jsonCountPattern = new Regex("number_of_gallery_jsons\\s?=\\s?([0-9]+)");
         private Dictionary<int, Gallery[]> chunks = new Dictionary<int, Gallery[]>();
         private bool isDownloading = false;
         private int chunkCnt = 0;
@@ -60,17 +58,6 @@ namespace LibHitomi
         {
             ListDownloadCompleted += (a) => { };
             ListDownloadProgress += (a, b) => { };
-        }
-        private int getJsonCount()
-        {
-            HttpWebRequest wreq = RequestHelper.CreateRequest(searchlibUrl);
-            using (Stream str = wreq.GetResponse().GetResponseStream())
-            using (StreamReader sre = new StreamReader(str))
-            {
-                string res = sre.ReadToEnd();
-                Match match = jsonCountPattern.Match(res);
-                return int.Parse(match.Groups[1].Value);
-            }
         }
         private Gallery[] getChunk(int i, bool raiseEvent = false)
         {
@@ -143,7 +130,6 @@ namespace LibHitomi
                 return;
             });
         }
-
         /// <summary>
         /// 목록 다운로드가 완료됐을 때 발생합니다.
         /// </summary>
@@ -160,31 +146,6 @@ namespace LibHitomi
         /// 추가적으로 추가할 갤러리 파일의 경로입니다.
         /// </summary>
         public string ExtraGalleriesPath { get; set; } = "";
-        /// <summary>
-        /// RSS를 읽어 가장 최근에 올라온 갤러리의 작품 ID를 반환합니다.
-        /// </summary>
-        /// <returns></returns>
-        public static int GetLatestGalleryID()
-        {
-            Regex regex = new Regex("https://hitomi\\.la/galleries/([0-9]+).html", RegexOptions.Compiled);
-            HttpWebRequest wreq = RequestHelper.CreateRequest("", "/index-all.atom");
-            using (WebResponse wres = wreq.GetResponse())
-            using (Stream str = wres.GetResponseStream())
-            using (XmlReader xmlReader = XmlReader.Create(str))
-            {
-                bool isEntry = false, isIdNode = false;
-                while (xmlReader.Read())
-                {
-                    if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == "entry")
-                        isEntry = true;
-                    else if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == "id" && isEntry)
-                        isIdNode = true;
-                    else if (xmlReader.NodeType == XmlNodeType.Text && isIdNode)
-                        return int.Parse(regex.Match(xmlReader.Value).Groups[1].Value);
-                }
-            }
-            throw new NotImplementedException();
-        }
         /// <summary>
         /// 갤러리 목록 다운로드를 시작합니다. 여러개의 쓰레드를 사용하며 완료시 이벤트를 발생시킵니다.
         /// </summary>
