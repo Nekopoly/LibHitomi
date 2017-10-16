@@ -50,6 +50,12 @@ namespace LibHitomi.Database
             FilterDefinitionBuilder<Gallery> filterBuilder = new FilterDefinitionBuilder<Gallery>();
             return (await collection.FindAsync(filterBuilder.Empty)).ToEnumerable();
         }
+        public Gallery GetGalleryById(int id)
+        {
+            IMongoCollection<Gallery> collection = getColleciton();
+            FilterDefinitionBuilder<Gallery> filterBuilder = new FilterDefinitionBuilder<Gallery>();
+            return collection.Find(filterBuilder.Eq("id", id)).First();
+        }
         public long CountEveryGalleries()
         {
             IMongoCollection<Gallery> collection = getColleciton();
