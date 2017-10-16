@@ -6,12 +6,13 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using MongoDB.Bson;
+using MongoDB.Driver.Linq;
 using MongoDB.Bson.Serialization;
 using LibHitomi.Search;
 
 namespace LibHitomi.Database
 {
-    class DatabaseReader
+    public class DatabaseReader
     {
         MongoClient mongoClient;
         string databaseName;
@@ -36,6 +37,12 @@ namespace LibHitomi.Database
             IMongoCollection<Gallery> collection = getColleciton();
             FilterDefinitionBuilder<Gallery> filterBuilder = new FilterDefinitionBuilder<Gallery>();
             return collection.Find(filterBuilder.Empty).ToEnumerable();
+        }
+        public IEnumerable<Gallery> GetRandomGalleries(int count)
+        {
+            IMongoCollection<Gallery> collection = getColleciton();
+            FilterDefinitionBuilder<Gallery> filterBuilder = new FilterDefinitionBuilder<Gallery>();
+            return collection.AsQueryable().Sample(count).AsEnumerable();
         }
         public async Task<IEnumerable<Gallery>> GetEveryGalleriesAsync()
         {
@@ -98,6 +105,10 @@ namespace LibHitomi.Database
                     default:
                         continue;
                 }
+                propertyName = (typeof(Gallery).GetField(propertyName.ToLower(), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    .GetCustomAttributes(typeof(MongoDB.Bson.Serialization.Attributes.BsonElementAttribute), true)
+                    .First() as MongoDB.Bson.Serialization.Attributes.BsonElementAttribute)
+                    .ElementName;
                 FilterDefinition<Gallery> def;
                 switch (queryItem.QueryType)
                 {

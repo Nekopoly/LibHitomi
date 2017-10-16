@@ -9,6 +9,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace LibHitomi
 {
@@ -132,6 +134,10 @@ namespace LibHitomi
         [JsonProperty(PropertyName = "id")]
         [BsonElement("id")]
         internal int id;
+        [JsonIgnore]
+        [BsonElement("_mongoId")]
+        [BsonId()]
+        internal ObjectId _mongoId;
 
         // Public properties
         [JsonIgnore()]
