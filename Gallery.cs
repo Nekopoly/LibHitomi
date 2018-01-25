@@ -8,9 +8,6 @@ using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace LibHitomi
 {
@@ -99,52 +96,33 @@ namespace LibHitomi
             this.GalleryCrawlMethod = GalleryCrawlMethod.Normal;
             UnNull();
         }
-        [BsonElement("type")]
         [JsonProperty(PropertyName = "type")]
         internal string type;
         [JsonProperty(PropertyName = "a")]
-        [BsonElement("a")]
         internal string[] artists;
         [JsonProperty(PropertyName = "g")]
-        [BsonElement("g")]
         internal string[] groups;
         [JsonProperty(PropertyName = "p")]
-        [BsonElement("p")]
         internal string[] parodies;
         [JsonProperty(PropertyName = "t")]
-        [BsonElement("t")]
         internal string[] tags;
         [JsonProperty(PropertyName = "c")]
-        [BsonElement("c")]
         internal string[] characters;
         [JsonProperty(PropertyName = "l")]
-        [BsonElement("l")]
         internal string language;
         [JsonProperty(PropertyName = "n")]
-        [BsonElement("n")]
         internal string name;
         [JsonProperty(PropertyName = "videofilename")]
-        [BsonElement("videofilename")]
-        [BsonIgnoreIfNull()]
         internal string videoFilename;
         [JsonProperty(PropertyName = "videogalleryid")]
-        [BsonElement("videogalleryid")]
-        [BsonIgnoreIfNull()]
         internal int videoGalleryId;
         [JsonProperty(PropertyName = "id")]
-        [BsonElement("id")]
         internal int id;
-        [JsonIgnore]
-        [BsonElement("_mongoId")]
-        [BsonId()]
-        internal ObjectId _mongoId;
 
         // Public properties
         [JsonIgnore()]
-        [BsonElement("crawlMethod")]
         public GalleryCrawlMethod GalleryCrawlMethod { get; internal set; }
         [JsonIgnore()]
-        [BsonIgnore()]
         public string[] ThumbnailUrls { get { return getThumbnailUrls(); } }
 
         // Public methods
@@ -176,67 +154,56 @@ namespace LibHitomi
 
         // Public members
         [JsonIgnore()]
-        [BsonIgnore()]
         public string[] Artists
         {
             get { return artists; }
         }
         [JsonIgnore()]
-        [BsonIgnore()]
         public string Type
         {
             get { return type; }
         }
         [JsonIgnore()]
-        [BsonIgnore()]
         public string[] Groups
         {
             get { return groups; }
         }
         [JsonIgnore()]
-        [BsonIgnore()]
         public string[] Parodies
         {
             get { return parodies; }
         }
         [JsonIgnore()]
-        [BsonIgnore()]
         public string[] Tags
         {
             get { return tags; }
         }
         [JsonIgnore()]
-        [BsonIgnore()]
         public string[] Characters
         {
             get { return characters; }
         }
         [JsonIgnore()]
-        [BsonIgnore()]
         public string Language
         {
             get { return language; }
         }
         [JsonIgnore()]
-        [BsonIgnore()]
         public string Name
         {
             get { return name; }
         }
         [JsonIgnore()]
-        [BsonIgnore()]
         public string VideoFilename
         {
             get { return videoFilename; }
         }
         [JsonIgnore()]
-        [BsonIgnore()]
         public int VideoGalleryId
         {
             get { return videoGalleryId; }
         }
         [JsonIgnore()]
-        [BsonIgnore()]
         public int Id
         {
             get { return id; }

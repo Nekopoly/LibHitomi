@@ -77,7 +77,7 @@ namespace LibHitomi.Search
         /// <summary>
         /// 검색 대상이 배열 형식인지 문자열 형식인지를 나타냅니다.
         /// </summary>
-        internal bool isForArrayNamespace { get
+        public bool isForArrayNamespace { get
             {
                 return !(this.Namespace == TagNamespace.Name || this.Namespace == TagNamespace.Language || this.Namespace == TagNamespace.Type);
             }
