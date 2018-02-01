@@ -82,6 +82,14 @@ namespace LibHitomi.Downloader
                         break;
                 }
                 isCompleted = true;
+                for(int i = 0; i < threads.Length; i++)
+                {
+                    if(threads[i].ManagedThreadId != Thread.CurrentThread.ManagedThreadId)
+                    {
+                        threads[i].Abort();
+                        threads[i] = null;
+                    }
+                }
                 DownloadCompleted(this);
             }
         }
