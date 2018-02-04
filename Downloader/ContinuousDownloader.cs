@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -18,8 +19,8 @@ namespace LibHitomi.Downloader
         public event GalleryDownloadCompletedDelegate DownloadGalleryCompleted;
         public event GalleryDownloadStartedDelegate DownloadGalleryStarted;
         public event GalleryIgnoredDelegate GalleryIgnored;
-        private Queue<IDownloadJob> jobs = new Queue<IDownloadJob>();
-        private HashSet<int> requestedJobIds = new HashSet<int>();
+        private ConcurrentQueue<IDownloadJob> jobs = new ConcurrentQueue<IDownloadJob>();
+        private ConcurrentBag<int> requestedGalleryIds = new ConcurrentBag<int>();
         private Thread jobStarterThread;
         private int galleryLimit, imageLimit;
         private string saveDirectory;
@@ -58,10 +59,7 @@ namespace LibHitomi.Downloader
             int maxJobId = 1;
             while (true)
             {
-                if (jobs.Count == 0)
-                    continue;
-                IDownloadJob job = jobs.Dequeue();
-                if (job == null)
+                if (!jobs.TryDequeue(out IDownloadJob job))
                     continue;
                 System.Diagnostics.Debug.WriteLine("Setting jobid to " + maxJobId);
                 job.JobId = maxJobId++;
@@ -114,7 +112,7 @@ namespace LibHitomi.Downloader
             GalleryAdded(this, galleries.ToArray());
             foreach (Gallery gallery in galleries)
             {
-                if(requestedJobIds.Contains(gallery.Id))
+                if(requestedGalleryIds.Contains(gallery.Id))
                 {
                     switch(WhenTriedDuplicatedGallery)
                     {
@@ -126,7 +124,7 @@ namespace LibHitomi.Downloader
                     }
                 } else
                 {
-                    requestedJobIds.Add(gallery.Id);
+                    requestedGalleryIds.Add(gallery.Id);
                 }
                 IDownloadJob job;
                 if (gallery.type == "anime")

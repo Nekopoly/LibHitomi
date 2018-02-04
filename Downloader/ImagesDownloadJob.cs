@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ namespace LibHitomi.Downloader
         private int notDownloadedImages;
         private string directoryPath;
         private Thread[] threads;
-        private Queue<string> urls = new Queue<string>();
+        private ConcurrentBag<string> urls = new ConcurrentBag<string>();
         // Properties
         public Gallery Gallery { get { return gallery; } }
         public bool IsCompleted { get { return isCompleted; } }
@@ -34,7 +35,7 @@ namespace LibHitomi.Downloader
         {
             System.Threading.Thread.CurrentThread.Name = "Url Download Thread - " + gallery.Id;
             foreach (string i in gallery.getImageUrls())
-                urls.Enqueue(i);
+                urls.Add(i);
             notDownloadedImages = urls.Count;
             DownloadProgress(this, ProgressEventTypes.SetProrgessBarMaximum, urls.Count);
             DownloadProgress(this, ProgressEventTypes.SetProgressBarValue, 0);
@@ -49,14 +50,7 @@ namespace LibHitomi.Downloader
             System.Threading.Thread.CurrentThread.Name = "Image Download Thread " + (waitForOthers ? "(Sacred)" : "") + "- " + gallery.id;
             while (true)
             {
-                string url = null;
-                lock (urls)
-                {
-                    if (urls.Count == 0)
-                        break;
-                    url = urls.Dequeue();
-                }
-                if (url == null)
+                if (!urls.TryTake(out string url))
                     break;
                 if (!Directory.Exists(directoryPath))
                     Directory.CreateDirectory(directoryPath);
