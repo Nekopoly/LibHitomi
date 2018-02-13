@@ -18,17 +18,32 @@ namespace LibHitomi.Downloader
         public event GalleryDownloadProgressDelegate DownloadGalleryProgress;
         public event GalleryDownloadCompletedDelegate DownloadGalleryCompleted;
         public event GalleryDownloadStartedDelegate DownloadGalleryStarted;
-        public event GalleryIgnoredDelegate GalleryIgnored;
-        private ConcurrentQueue<IDownloadJob> jobs = new ConcurrentQueue<IDownloadJob>();
-        private ConcurrentBag<int> requestedGalleryIds = new ConcurrentBag<int>();
+        private ConcurrentBag<Gallery> requestedGalleries = new ConcurrentBag<Gallery>();
         private Thread jobStarterThread;
         private int galleryLimit, imageLimit;
         private string saveDirectory;
         private bool isStarted = false;
         private int processingJobs = 0;
+        private ConcurrentQueue<Gallery> queuedGalleries = new ConcurrentQueue<Gallery>();
 
-        private void startJob(IDownloadJob job)
+        private void startJob(Gallery gallery, int jobId)
         {
+            IDownloadJob job;
+            if (gallery.type == "anime")
+            {
+                job = new AnimeDownloadJob();
+            }
+            else
+            {
+                job = new ImagesDownloadJob();
+            }
+            string subdir = $"{gallery.Id} - {gallery.Name}";
+            foreach (char i in Path.GetInvalidPathChars().Concat(Path.GetInvalidFileNameChars()))
+            {
+                subdir = subdir.Replace(i, '_');
+            }
+            job.JobId = jobId;
+            job.Initialize(gallery, imageLimit, Path.Combine(saveDirectory, subdir));
             job.DownloadCompleted += startAnotherJobWhenFinished;
             job.DownloadCompleted += JobDownloadCompleted;
             job.DownloadProgress += JobDownloadProgress;
@@ -59,17 +74,17 @@ namespace LibHitomi.Downloader
             int maxJobId = 1;
             while (true)
             {
-                if (!jobs.TryDequeue(out IDownloadJob job))
+                if (!queuedGalleries.TryDequeue(out Gallery gallery))
                     continue;
                 System.Diagnostics.Debug.WriteLine("Setting jobid to " + maxJobId);
-                job.JobId = maxJobId++;
-                while(true)
+                int jobId = maxJobId++;
+                while (true)
                 {
                     bool jobExecuted = false;
-                    if(processingJobs < galleryLimit)
+                    if (processingJobs < galleryLimit)
                     {
                         System.Diagnostics.Debug.WriteLine("Starting another job.....");
-                        startJob(job);
+                        startJob(gallery, jobId);
                         Interlocked.Increment(ref processingJobs);
                         jobExecuted = true;
                     }
@@ -108,44 +123,19 @@ namespace LibHitomi.Downloader
         /// <param name="galleries">추가할 갤러리들입니다.</param>
         public void AddGalleries(IEnumerable<Gallery> galleries)
         {
-            List<Gallery> ignoredGalleries = new List<LibHitomi.Gallery>();
-            GalleryAdded(this, galleries.ToArray());
-            foreach (Gallery gallery in galleries)
+            if (this.WhenTriedDuplicatedGallery == WhenTriedDuplicatedGallery.IgnoreAndDoNotDownload)
             {
-                if(requestedGalleryIds.Contains(gallery.Id))
-                {
-                    switch(WhenTriedDuplicatedGallery)
-                    {
-                        case WhenTriedDuplicatedGallery.IgnoreAndDoNotDownload:
-                            ignoredGalleries.Add(gallery);
-                            continue;
-                        case WhenTriedDuplicatedGallery.ThrowException:
-                            throw new TriedDuplicatedGalleryException(gallery);
-                    }
-                } else
-                {
-                    requestedGalleryIds.Add(gallery.Id);
-                }
-                IDownloadJob job;
-                if (gallery.type == "anime")
-                {
-                    job = new AnimeDownloadJob();
-                }
-                else
-                {
-                    job = new ImagesDownloadJob();
-                }
-                string subdir = $"{gallery.Id} - {gallery.Name}";
-                foreach (char i in Path.GetInvalidPathChars().Concat(Path.GetInvalidFileNameChars()))
-                {
-                    subdir = subdir.Replace(i, '_');
-                }
-                job.Initialize(gallery, imageLimit, Path.Combine(saveDirectory, subdir));
-                jobs.Enqueue(job);   
+                galleries = galleries.Except(requestedGalleries);
             }
-            if (ignoredGalleries.Count > 0)
+            else if (this.WhenTriedDuplicatedGallery == WhenTriedDuplicatedGallery.ThrowException && galleries.Intersect(requestedGalleries).Count() > 0)
             {
-                GalleryIgnored(this, ignoredGalleries.ToArray());
+                throw new TriedDuplicatedGalleryException();
+            }
+            galleries = galleries.Distinct();
+            GalleryAdded(this, galleries.ToArray());
+            foreach (Gallery g in galleries) {
+                requestedGalleries.Add(g);
+                queuedGalleries.Enqueue(g);
             }
         }
 

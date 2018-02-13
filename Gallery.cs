@@ -29,7 +29,7 @@ namespace LibHitomi
         /// </summary>
         AddedManually
     }
-    public class Gallery
+    public class Gallery : IEqualityComparer<Gallery>
     {
         // Static Members
         private static string[] getImageNumbs(int galleryId)
@@ -150,6 +150,16 @@ namespace LibHitomi
             if (tags == null) tags = new string[] { };
             if (language == null) language = "";
             if (name == null) name = "";
+        }
+
+        public bool Equals(Gallery x, Gallery y)
+        {
+            return x.Id == y.Id;
+        }
+
+        public int GetHashCode(Gallery obj)
+        {
+            return obj.Id;
         }
 
         // Public members
