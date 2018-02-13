@@ -42,15 +42,15 @@ namespace LibHitomi.Downloader
             using (Stream str = wres.GetResponseStream())
             using (FileStream fstr = new FileStream(filePath, FileMode.Create, FileAccess.Write))
             {
-                int received;
+                int received = 0;
+                long contentLength = wres.ContentLength, totalReceived = 0;
                 const int bufferSize = 81920;
                 byte[] buffer = new byte[bufferSize];
-                DownloadProgress(this, ProgressEventTypes.IncreaseProgressBar, wres.ContentLength);
-                DownloadProgress(this, ProgressEventTypes.SetProgressBarValue, 0);
                 while ((received = str.Read(buffer, 0, buffer.Length)) != 0)
                 {
                     fstr.Write(buffer, 0, received);
-                    DownloadProgress(this, ProgressEventTypes.IncreaseProgressBar, received);
+                    totalReceived += received;
+                    DownloadProgress(this, ProgressEventTypes.SetProgressBarValue, (int)((double)totalReceived / contentLength * 100000.0));
                 }
             }
             isCompleted = true;
@@ -72,8 +72,7 @@ namespace LibHitomi.Downloader
             if (isStarted)
                 throw new InvalidOperationException("이미 다운로드를 시작했습니다");
             isStarted = true;
-            DownloadProgress(this, ProgressEventTypes.SetProrgessBarMaximum, 100);
-            DownloadProgress(this, ProgressEventTypes.ToggleProgressMarquee, true);
+            DownloadProgress(this, ProgressEventTypes.SetProrgessBarMaximum, 100000);
             thread = new Thread(downloadAnime);
             thread.Start();
         }
