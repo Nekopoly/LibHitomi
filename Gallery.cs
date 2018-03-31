@@ -11,21 +11,33 @@ using Newtonsoft.Json.Serialization;
 
 namespace LibHitomi
 {
-    /// <summary>
+    /// <summary xml:lang="ko">
     /// 갤러리가 크롤링된 방법입니다.
+    /// </summary>
+    /// <summary>
+    /// Methods describing how gallery information is crawlled
     /// </summary>
     public enum GalleryCrawlMethod
     {
+        /// <summary xml:lang="ko">
+        /// ListDownloader 클래스에 의해 정상적으로 크롤링됐습니다.
+        /// </summary>
         /// <summary>
-        /// ListUpdater 클래스에 의해 정상적으로 크롤링됐습니다.
+        /// Gallery is crawlled by ListDownloader class
         /// </summary>
         Normal,
-        /// <summary>
+        /// <summary xml:lang="ko">
         /// Gallery.GetGalleryByParsingGalleryBlock() 메소드를 이용하여 크롤링됐습니다.
         /// </summary>
-        ParsedGalleryBlock,
         /// <summary>
-        /// ListUpdater의 ExtraGalleries 관련 속성/기능을 이용하여 크롤링되지 아니하고 수동으로 추가됐습니다.
+        /// Gallery is crawlled by Gallery.GetGalleryByParsingGalleryBlock method
+        /// </summary>
+        ParsedGalleryBlock,
+        /// <summary xml:lang="ko">
+        /// ListDownloader의 ExtraGalleries 관련 속성/기능을 이용하여 크롤링되지 아니하고 수동으로 추가됐습니다.
+        /// </summary>
+        /// <summary>
+        /// Galley isn't crawlled but added manullay via ExtraGalleries-related properties of ListDownloader class
         /// </summary>
         AddedManually
     }

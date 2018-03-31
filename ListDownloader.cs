@@ -17,37 +17,61 @@ namespace LibHitomi
     public delegate void ListDownloadProgress(ListDownloadProgressType progressType, int? data);
     public enum ListDownloadProgressType
     {
-        /// <summary>
+        /// <summary xml:lang="ko">
         /// 조각 갯수를 받았을 때 발생합니다. data 매개변수로 조각 갯수가 전달됩니다.
         /// </summary>
-        GotTotalChunkCount,
         /// <summary>
+        /// Received chunk count. chunk count is passed via data parameter.
+        /// </summary>
+        GotTotalChunkCount,
+        /// <summary xml:lang="ko">
         /// 조각을 다운로드하기 시작했을 때 발생합니다. data 매개변수로 다운로드를 시작한 조각 번호가 전달됩니다. (조각 번호는 0부터 시작합니다.)
         /// </summary>
-        DownloadingChunkStarted,
         /// <summary>
+        /// Started downloading chunk. chunk number which is downloading is passed via data parameter.
+        /// </summary>
+        DownloadingChunkStarted,
+        /// <summary xml:lang="ko">
         /// 조각을 다운로드했을 때 발생합니다. data 매개변수로 다운로드한 조각 번호가 전달됩니다. (조각 번호는 0부터 시작합니다.)
         /// </summary>
-        DownloadedChunk,
         /// <summary>
+        /// Chunk download is completed. downloaded chunk number is passed via data parameter.
+        /// </summary>
+        DownloadedChunk,
+        /// <summary xml:lang="ko">
         /// 조각들을 다 받고 마무리 작업이 시작할 때 발생합니다. data 매개변수는 전달되지 않습니다.
         /// </summary>
-        FinishingStarted,
         /// <summary>
+        /// All chunks are downloaded and finishing is started. No data parameter passed.
+        /// </summary>
+        FinishingStarted,
+        /// <summary xml:lang="ko">
         /// 수동추가할 갤러리들을 불러들이기 시작할 때 발생합니다. data 매개변수는 전달되지 않습니다.
         /// </summary>
-        LoadingExtraGalleries,
         /// <summary>
+        /// Started to add galleries manually. No data parameter passed.
+        /// </summary>
+        LoadingExtraGalleries,
+        /// <summary xml:lang="ko">
         /// 갤러리들이 수동추가될 때 발생합니다. data 매개변수는 전달되지 않습니다.
         /// </summary>
-        LoadedExtraGalleries,
         /// <summary>
+        /// Galleries are added manullay. No data parameter passed.
+        /// </summary>
+        LoadedExtraGalleries,
+        /// <summary xml:lang="ko">
         /// 수동추가할 갤러리가 없을 때 발생합니다. data 매개변수는 전달되지 않습니다.
+        /// </summary>
+        /// <summary>
+        /// There're no galleries to be added manullay. No data parameter passed.
         /// </summary>
         HasNoExtraGalleries,
     }
-    /// <summary>
+    /// <summary xml:lang="ko">
     /// 갤러리 목록 전체를 다운로드합니다.
+    /// </summary>
+    /// <summary>
+    /// Downloads gallery list
     /// </summary>
     public class ListDownloader : ListDownloaderBase
     {
@@ -130,26 +154,42 @@ namespace LibHitomi
                 return;
             });
         }
-        /// <summary>
+        /// <summary xml:lang="ko">
         /// 목록 다운로드가 완료됐을 때 발생합니다.
         /// </summary>
-        public event ListDownloadCompletedDelegate ListDownloadCompleted;
         /// <summary>
+        /// Event when list is downloaded
+        /// </summary>
+        public event ListDownloadCompletedDelegate ListDownloadCompleted;
+        /// <summary xml:lang="ko">
         /// 목록 다운로드가 진행중일때 발생합니다.
         /// </summary>
-        public event ListDownloadProgress ListDownloadProgress;
         /// <summary>
+        /// Event when download is in progress
+        /// </summary>
+        public event ListDownloadProgress ListDownloadProgress;
+        /// <summary xml:lang="ko">
         /// 추가적으로 갤러리들을 파일에서 불러올지의 여부입니다.
         /// </summary>
-        public bool LoadExtraGalleries { get; set; } = false;
         /// <summary>
+        /// Loads some galleries addtitionally from file. Sometimes this is described as "add manually".
+        /// </summary>
+        public bool LoadExtraGalleries { get; set; } = false;
+        /// <summary xml:lang="ko">
         /// 추가적으로 추가할 갤러리 파일의 경로입니다.
         /// </summary>
-        public string ExtraGalleriesPath { get; set; } = "";
         /// <summary>
+        /// Path some galleries are loaded from.
+        /// </summary>
+        public string ExtraGalleriesPath { get; set; } = "";
+        /// <summary xml:lang="ko">
         /// 갤러리 목록 다운로드를 시작합니다. 여러개의 쓰레드를 사용하며 완료시 이벤트를 발생시킵니다.
         /// </summary>
-        /// <param name="throwErrorIfAlreadyDownloading">이미 다운로드하고 있을 시 오류를 반환할 지의 여부입니다.</param>
+        /// <summary>
+        /// Downloads gallery list. This uses multiple threads and occurs event.
+        /// </summary>
+        /// <param name="throwErrorIfAlreadyDownloading" xml:lang="ko">이미 다운로드하고 있을 시 오류를 반환할 지의 여부입니다.</param>
+        /// <param name="throwErrorIfAlreadyDownloading">Throws exception when downloading is already in progress</param>
         public async void StartDownload(bool throwErrorIfAlreadyDownloading = true)
         {
             if(isDownloading && throwErrorIfAlreadyDownloading)

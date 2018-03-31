@@ -35,6 +35,11 @@
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>HitomiSharp-SigningKey.snk</AssemblyOriginatorKeyFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>A library about hitomi.la</Description>
+    <Copyright>Copyright (C) 2017 LiteHell</Copyright>
+    <PackageLicenseUrl>https://mit-license.org/</PackageLicenseUrl>
+    <Version>1.0.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="HitomiSharp-SigningKey.snk" />

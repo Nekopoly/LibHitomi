@@ -12,8 +12,11 @@ namespace LibHitomi
     public delegate void InitializationCompletedDelegate();
     public delegate void InitializationStartedDelegate();
     public delegate void autoCompleteSuggestedDelegate(string[] results);
-    /// <summary>
+    /// <summary xml:lang="ko">
     /// 검색 쿼리를 입력받아 검색 제안을 제공합니다.
+    /// </summary>
+    /// <summary>
+    /// Makes search suggetions from search query
     /// </summary>
     public class SearchSuggester
     {

@@ -28,8 +28,11 @@ namespace LibHitomi
                 return int.Parse(match.Groups[1].Value);
             }
         }
-        /// <summary>
+        /// <summary xml:lang="ko">
         /// RSS를 읽어 가장 최근에 올라온 갤러리의 작품 ID를 반환합니다.
+        /// </summary>
+        /// <summary>
+        /// Reads rss and return gallery id which is added most recently.
         /// </summary>
         /// <returns></returns>
         public static int GetLatestGalleryID()

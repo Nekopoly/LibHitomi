@@ -7,29 +7,47 @@ using System.Net;
 
 namespace LibHitomi
 {
-    /// <summary>
+    /// <summary xml:lang="ko">
     /// 서브도메인을 설정합니다.
+    /// </summary>
+    /// <summary>
+    /// Sets subdomains globally
     /// </summary>
     public static class DownloadOptions
     {
-        /// <summary>
+        /// <summary xml:lang="ko">
         /// 갤러리 목록 다운로드 주소의 서브도메인입니다.
         /// </summary>
-        public static string JsonSubdomain { get; set; } = "ltn";
         /// <summary>
+        /// Subdomain used when downloading gallery list
+        /// </summary>
+        public static string JsonSubdomain { get; set; } = "ltn";
+        /// <summary xml:lang="ko">
         /// 이미지 주소를 생성할 때 사용할 서브도메인입니다
         /// </summary>
-        public static string ImageSubdomain { get; set; } = "a";
         /// <summary>
+        /// Subdomain used when generating image url
+        /// </summary>
+        public static string ImageSubdomain { get; set; } = "a";
+        /// <summary xml:lang="ko">
         /// 썸네일 주소를 생성할 때 사용할 서브도메인입니다
         /// </summary>
-        public static string ThumbnailSubdomain { get; set; } = "btn";
         /// <summary>
+        /// Subodmain used when generating thumbnail url
+        /// </summary>
+        public static string ThumbnailSubdomain { get; set; } = "btn";
+        /// <summary xml:lang="ko">
         /// 동영상 스트리밍 주소를 생성할 때 서용할 서브도메인입니다.
         /// </summary>
-        public static string VideoStreamingSubdomain { get; set; } = "streaming";
         /// <summary>
+        /// Subodmain used when generating video url for streaming
+        /// </summary>
+        public static string VideoStreamingSubdomain { get; set; } = "streaming";
+        /// <summary xml:lang="ko">
         /// 다운로드나 갤러리 목록 조회등에 사용할 프록시입니다.
+        /// </summary>
+        /// <summary>
+        /// Proxy used when downloading or downloading gallery list
         /// </summary>
         public static WebProxy DefaultProxy { get; set; } = null;
     }
