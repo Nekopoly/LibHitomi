@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace LibHitomi
 {
@@ -22,13 +24,6 @@ namespace LibHitomi
         /// Subdomain used when downloading gallery list
         /// </summary>
         public static string JsonSubdomain { get; set; } = "ltn";
-        /// <summary xml:lang="ko">
-        /// 이미지 주소를 생성할 때 사용할 서브도메인입니다
-        /// </summary>
-        /// <summary>
-        /// Subdomain used when generating image url
-        /// </summary>
-        public static string ImageSubdomain { get; set; } = "a";
         /// <summary xml:lang="ko">
         /// 썸네일 주소를 생성할 때 사용할 서브도메인입니다
         /// </summary>
@@ -82,6 +77,19 @@ namespace LibHitomi
                 req.Proxy = DownloadOptions.DefaultProxy;
             }
             return req;
+        }
+        internal static string GalleryIdToImageSubdoamin(int subdomain)
+        {
+            HttpWebRequest wreq = CreateRequest("https://hitomi.la/download.js");
+            using (HttpWebResponse wres = wreq.GetResponse() as HttpWebResponse)
+            using (Stream str = wres.GetResponseStream())
+            using (StreamReader sre = new StreamReader(str))
+            {
+                Regex frontendPattern = new System.Text.RegularExpressions.Regex(@"var\s?number_of_frontends\s?=\s?([0-9]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                const string subdomainBase = "a";
+                int frontendCount = int.Parse(frontendPattern.Match(sre.ReadToEnd()).Groups[1].Value);
+                return Char.ConvertFromUtf32(97 + (subdomain % frontendCount)) + subdomainBase;
+            }
         }
         internal static HttpWebRequest CreateRequest(string subdomain, string path)
         {

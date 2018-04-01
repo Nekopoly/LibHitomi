@@ -61,7 +61,7 @@ namespace LibHitomi
         }
         public static string[] GetImageUrls(int galleryId)
             => getImageNumbs(galleryId)
-            .Select(n => RequestHelper.CreateUrl(DownloadOptions.ImageSubdomain, $"/galleries/{galleryId}/{n}")).ToArray();
+            .Select(n => RequestHelper.CreateUrl(RequestHelper.GalleryIdToImageSubdoamin(galleryId), $"/galleries/{galleryId}/{n}")).ToArray();
         
         public static string[] GetThumbnailUrls(int galleryId)
             => getImageNumbs(galleryId)
@@ -148,7 +148,7 @@ namespace LibHitomi
             => RequestHelper.CreateRequest(getThumbnailUrls()[index]).GetResponse().GetResponseStream();
 
         public string getDownloadableVideoUrl()
-            => RequestHelper.CreateUrl(DownloadOptions.ImageSubdomain, $"/videos/{this.videoFilename}");
+            => RequestHelper.CreateUrl(RequestHelper.GalleryIdToImageSubdoamin(this.Id), $"/videos/{this.videoFilename}");
 
         public string getStreamingVideoUrl()
             => RequestHelper.CreateUrl(DownloadOptions.VideoStreamingSubdomain, $"/videos/{this.videoFilename}");
