@@ -78,18 +78,22 @@ namespace LibHitomi
             }
             return req;
         }
+        private static int frontendCount = 0;
         internal static string GalleryIdToImageSubdoamin(int subdomain)
         {
-            HttpWebRequest wreq = CreateRequest("https://hitomi.la/download.js");
-            using (HttpWebResponse wres = wreq.GetResponse() as HttpWebResponse)
-            using (Stream str = wres.GetResponseStream())
-            using (StreamReader sre = new StreamReader(str))
+            if (frontendCount == 0)
             {
-                Regex frontendPattern = new System.Text.RegularExpressions.Regex(@"var\s?number_of_frontends\s?=\s?([0-9]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
-                const string subdomainBase = "a";
-                int frontendCount = int.Parse(frontendPattern.Match(sre.ReadToEnd()).Groups[1].Value);
-                return Char.ConvertFromUtf32(97 + (subdomain % frontendCount)) + subdomainBase;
+                HttpWebRequest wreq = CreateRequest("https://hitomi.la/download.js");
+                using (HttpWebResponse wres = wreq.GetResponse() as HttpWebResponse)
+                using (Stream str = wres.GetResponseStream())
+                using (StreamReader sre = new StreamReader(str))
+                {
+                    Regex frontendPattern = new System.Text.RegularExpressions.Regex(@"var\s?number_of_frontends\s?=\s?([0-9]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                    frontendCount = int.Parse(frontendPattern.Match(sre.ReadToEnd()).Groups[1].Value);
+                }
             }
+            const string subdomainBase = "a";
+            return Char.ConvertFromUtf32(97 + (subdomain % frontendCount)) + subdomainBase;
         }
         internal static HttpWebRequest CreateRequest(string subdomain, string path)
         {
