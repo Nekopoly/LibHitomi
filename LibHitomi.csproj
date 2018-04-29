@@ -39,7 +39,10 @@
     <Description>A library about hitomi.la</Description>
     <Copyright>Copyright (C) 2017 LiteHell</Copyright>
     <PackageLicenseUrl>https://mit-license.org/</PackageLicenseUrl>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
+    <NeutralLanguage>ko-KR</NeutralLanguage>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <FileVersion>1.0.2.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
     <None Include="HitomiSharp-SigningKey.snk" />
