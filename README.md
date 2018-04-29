@@ -2,7 +2,11 @@
 [히토미](https://hitomi.la)를 씹고 뜯고 맛보고 즐기기 위해 만든 라이브러리. 꽤 오랫동안 비공개로 개발하다가 공개함.
 
 # 문서
-문서는 깃허브 위키 참고. 기존에 개같이 써둔 걸 복붙한거라 읽기 좀 힘들수도 있음.
+문서는 [위키](https://github.com/LiteHell/LibHitomi/wiki) 참고. 기존에 개같이 써둔 걸 복붙한거라 읽기 좀 힘들거나 안 맞을 수 있음.
+
+# 설치
+Nuget 쓰세요.
+> Install-Package LibHitomi
 
 # License
 Copyrights (C) 2017 LiteHell
