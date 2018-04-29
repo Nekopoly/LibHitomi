@@ -79,11 +79,11 @@ namespace LibHitomi
             return req;
         }
         private static int frontendCount = 0;
-        internal static string GalleryIdToImageSubdoamin(int subdomain)
+        internal static string GalleryIdToImageSubdoamin(int galleryId)
         {
             if (frontendCount == 0)
             {
-                HttpWebRequest wreq = CreateRequest("https://hitomi.la/download.js");
+                HttpWebRequest wreq = CreateRequest(CreateUrl(DownloadOptions.JsonSubdomain, "/common.js"));
                 using (HttpWebResponse wres = wreq.GetResponse() as HttpWebResponse)
                 using (Stream str = wres.GetResponseStream())
                 using (StreamReader sre = new StreamReader(str))
@@ -93,7 +93,9 @@ namespace LibHitomi
                 }
             }
             const string subdomainBase = "a";
-            return Char.ConvertFromUtf32(97 + (subdomain % frontendCount)) + subdomainBase;
+            int first = galleryId % 10;
+            if (first == 1) first = 0; // 왜 이렇게 스크립트를 짜놨지...?
+            return Char.ConvertFromUtf32(97 + (first % frontendCount)) + subdomainBase;
         }
         internal static HttpWebRequest CreateRequest(string subdomain, string path)
         {
