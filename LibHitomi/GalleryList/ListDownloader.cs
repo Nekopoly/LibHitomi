@@ -53,14 +53,14 @@ namespace LibHitomi.GalleryList
     /// </summary>
     public class ListDownloader : ListDownloaderBase
     {
-        private Dictionary<int, IEnumerable<Gallery>> chunks = new Dictionary<int, IEnumerable<Gallery>>();
+        private Dictionary<int, Gallery[]> chunks = new Dictionary<int, Gallery[]>();
         private bool isDownloading = false;
         private int chunkCnt = 0;
         public ListDownloader()
         {
             ListDownloadProgress += (a, b) => { };
         }
-        private async Task<IEnumerable<Gallery>> getChunk(int i, bool raiseEvent = false)
+        private async Task<Gallery[]> getChunk(int i, bool raiseEvent = false)
         {
             if (raiseEvent) ListDownloadProgress(ListDownloadProgressType.DownloadingChunkStarted, i);
             HttpWebRequest wreq = RequestHelper.CreateRequest(DownloadOptions.JsonSubdomain, $"/galleries{i}.json");
@@ -70,6 +70,7 @@ namespace LibHitomi.GalleryList
             using (JsonReader reader = new JsonTextReader(sre))
             {
                 JsonSerializer serializer = new JsonSerializer();
+                serializer.NullValueHandling = NullValueHandling.Ignore;
                 Gallery[] result = serializer.Deserialize<Gallery[]>(reader);
                 if (raiseEvent) ListDownloadProgress(ListDownloadProgressType.DownloadedChunk, i);
                 return result;
@@ -79,13 +80,20 @@ namespace LibHitomi.GalleryList
         {
             Debug.WriteLine("Finishing Thread #" + Thread.CurrentThread.ManagedThreadId + " Started");
             ListDownloadProgress(ListDownloadProgressType.FinishingStarted, null);
-            List<Gallery> list = new List<Gallery>();
+            int totalCount = 0;
             for (var i = 0; i < chunkCnt; i++)
             {
-                list.AddRange(chunks[i]);
+                totalCount += chunks[i].Length;
+            }
+            Gallery[] list = new Gallery[totalCount];
+            int index = 0;
+            for (var i = 0; i < chunkCnt; i++)
+            {
+                Array.Copy(chunks[i], 0, list, index, chunks[i].Length);
+                index += chunks[i].Length;
             }
             Debug.WriteLine("Every chunks were added into list");
-            for(int i = 0; i < list.Count; i++)
+            for(int i = 0; i < list.Length; i++)
             {
                 list[i].UnNull();
             }
@@ -143,12 +151,12 @@ namespace LibHitomi.GalleryList
             ListDownloadProgress(ListDownloadProgressType.GotTotalChunkCount, chunkCnt);
             Debug.WriteLine("Gallery Json Chunk Count : " + chunkCnt);
             chunks.Clear();
-            List<Task> tasks = new List<Task>();
+            Task[] tasks = new Task[chunkCnt];
             for(var i = 0; i < chunkCnt; i++)
             {
-                tasks.Add(downloadChunkJob(i));
+                tasks[i] = downloadChunkJob(i);
             }
-            await Task.WhenAll(tasks.ToArray());
+            await Task.WhenAll(tasks);
             return await Task.Factory.StartNew(finishChunksJob);
         }
     }
