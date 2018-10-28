@@ -25,6 +25,13 @@ namespace LibHitomi
         /// </summary>
         public static string JsonSubdomain { get; set; } = "ltn";
         /// <summary xml:lang="ko">
+        /// 갤러리블록 다운로드시의 서브도메인입니다.
+        /// </summary>
+        /// <summary>
+        /// Subdomain used when getting galleryblock.
+        /// </summary>
+        public static string GalleryBlockSubdomain { get; set; } = "ltn";
+        /// <summary xml:lang="ko">
         /// 썸네일 주소를 생성할 때 사용할 서브도메인입니다
         /// </summary>
         /// <summary>

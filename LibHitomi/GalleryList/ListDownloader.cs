@@ -11,9 +11,8 @@ using Newtonsoft.Json;
 using System.Xml;
 using Debug = System.Diagnostics.Debug;
 
-namespace LibHitomi
+namespace LibHitomi.GalleryList
 {
-    public delegate void ListDownloadCompletedDelegate(List<Gallery> result);
     public delegate void ListDownloadProgress(ListDownloadProgressType progressType, int? data);
     public enum ListDownloadProgressType
     {
@@ -44,28 +43,7 @@ namespace LibHitomi
         /// <summary>
         /// All chunks are downloaded and finishing is started. No data parameter passed.
         /// </summary>
-        FinishingStarted,
-        /// <summary xml:lang="ko">
-        /// 수동추가할 갤러리들을 불러들이기 시작할 때 발생합니다. data 매개변수는 전달되지 않습니다.
-        /// </summary>
-        /// <summary>
-        /// Started to add galleries manually. No data parameter passed.
-        /// </summary>
-        LoadingExtraGalleries,
-        /// <summary xml:lang="ko">
-        /// 갤러리들이 수동추가될 때 발생합니다. data 매개변수는 전달되지 않습니다.
-        /// </summary>
-        /// <summary>
-        /// Galleries are added manullay. No data parameter passed.
-        /// </summary>
-        LoadedExtraGalleries,
-        /// <summary xml:lang="ko">
-        /// 수동추가할 갤러리가 없을 때 발생합니다. data 매개변수는 전달되지 않습니다.
-        /// </summary>
-        /// <summary>
-        /// There're no galleries to be added manullay. No data parameter passed.
-        /// </summary>
-        HasNoExtraGalleries,
+        FinishingStarted
     }
     /// <summary xml:lang="ko">
     /// 갤러리 목록 전체를 다운로드합니다.
@@ -75,19 +53,18 @@ namespace LibHitomi
     /// </summary>
     public class ListDownloader : ListDownloaderBase
     {
-        private Dictionary<int, Gallery[]> chunks = new Dictionary<int, Gallery[]>();
+        private Dictionary<int, IEnumerable<Gallery>> chunks = new Dictionary<int, IEnumerable<Gallery>>();
         private bool isDownloading = false;
         private int chunkCnt = 0;
         public ListDownloader()
         {
-            ListDownloadCompleted += (a) => { };
             ListDownloadProgress += (a, b) => { };
         }
-        private Gallery[] getChunk(int i, bool raiseEvent = false)
+        private async Task<IEnumerable<Gallery>> getChunk(int i, bool raiseEvent = false)
         {
             if (raiseEvent) ListDownloadProgress(ListDownloadProgressType.DownloadingChunkStarted, i);
             HttpWebRequest wreq = RequestHelper.CreateRequest(DownloadOptions.JsonSubdomain, $"/galleries{i}.json");
-            using (WebResponse wres = wreq.GetResponse())
+            using (WebResponse wres = await wreq.GetResponseAsync())
             using (Stream str = wres.GetResponseStream())
             using (StreamReader sre = new StreamReader(str))
             using (JsonReader reader = new JsonTextReader(sre))
@@ -98,22 +75,7 @@ namespace LibHitomi
                 return result;
             }
         }
-        private Gallery[] loadExtraGalleries()
-        {
-            using (FileStream fstr = new FileStream(ExtraGalleriesPath, FileMode.Open, FileAccess.Read))
-            using (StreamReader sre = new StreamReader(fstr))
-            using (JsonReader reader = new JsonTextReader(sre))
-            {
-                JsonSerializer serializer = new JsonSerializer();
-                Gallery[] result = serializer.Deserialize<Gallery[]>(reader);
-                for(int i = 0; i < result.Length; i++)
-                {
-                    result[i].GalleryCrawlMethod = GalleryCrawlMethod.AddedManually;
-                }
-                return result;
-            }
-        }
-        private List<Gallery> finishChunksJob()
+        private IEnumerable<Gallery> finishChunksJob()
         {
             Debug.WriteLine("Finishing Thread #" + Thread.CurrentThread.ManagedThreadId + " Started");
             ListDownloadProgress(ListDownloadProgressType.FinishingStarted, null);
@@ -123,44 +85,22 @@ namespace LibHitomi
                 list.AddRange(chunks[i]);
             }
             Debug.WriteLine("Every chunks were added into list");
-            if(LoadExtraGalleries)
-            {
-                Debug.WriteLine("Loading extra galleries");
-                ListDownloadProgress(ListDownloadProgressType.LoadingExtraGalleries, null);
-                List<int> searchableIds = new List<int>(list.Select(gallery => gallery.id));
-                list.AddRange(loadExtraGalleries().Where((Gallery extraGallery) => !searchableIds.Contains(extraGallery.id)));
-                ListDownloadProgress(ListDownloadProgressType.LoadedExtraGalleries, null);
-            } else
-            {
-                ListDownloadProgress(ListDownloadProgressType.HasNoExtraGalleries, null);
-            }
-            Debug.WriteLine("Made a list");
             for(int i = 0; i < list.Count; i++)
             {
                 list[i].UnNull();
             }
             Debug.WriteLine("Unnulled, Completed and Finished!");
-            return list;
+            return list.AsEnumerable();
         }
         private async Task downloadChunkJob(object _index)
         {
-            await Task.Run(() =>
-            {
-                int index = (int)_index;
-                Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + ", Working with " + index + "st chunk(zero-based)");
-                Gallery[] chunk = getChunk(index, true);
-                chunks.Add(index, chunk);
-                Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + "," + index + "st chunk(zero-based) has " + chunk.Length + " galleries and it's added");
-                return;
-            });
+            int index = (int)_index;
+            Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + ", Working with " + index + "st chunk(zero-based)");
+            var chunk = await getChunk(index, true);
+            chunks.Add(index, chunk);
+            Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + "," + index + "st chunk(zero-based) has " + chunk.Count() + " galleries and it's added");
+            return;
         }
-        /// <summary xml:lang="ko">
-        /// 목록 다운로드가 완료됐을 때 발생합니다.
-        /// </summary>
-        /// <summary>
-        /// Event when list is downloaded
-        /// </summary>
-        public event ListDownloadCompletedDelegate ListDownloadCompleted;
         /// <summary xml:lang="ko">
         /// 목록 다운로드가 진행중일때 발생합니다.
         /// </summary>
@@ -188,17 +128,13 @@ namespace LibHitomi
         /// <summary>
         /// Downloads gallery list. This uses multiple threads and occurs event.
         /// </summary>
-        /// <param name="throwErrorIfAlreadyDownloading" xml:lang="ko">이미 다운로드하고 있을 시 오류를 반환할 지의 여부입니다.</param>
-        /// <param name="throwErrorIfAlreadyDownloading">Throws exception when downloading is already in progress</param>
-        public async void StartDownload(bool throwErrorIfAlreadyDownloading = true)
+        public async Task<IEnumerable<Gallery>> Download()
         {
-            if(isDownloading && throwErrorIfAlreadyDownloading)
+            if (isDownloading)
             {
                 throw new Exception("Already downloading a gallery list!");
-            } else if(isDownloading)
-            {
-                return;
-            } else
+            }
+            else
             {
                 isDownloading = true;
             }
@@ -213,9 +149,7 @@ namespace LibHitomi
                 tasks.Add(downloadChunkJob(i));
             }
             await Task.WhenAll(tasks.ToArray());
-            List<Gallery> result = null;
-            await Task.Factory.StartNew(finishChunksJob).ContinueWith((Task<List<Gallery>> Task) => { result = Task.Result; });
-            ListDownloadCompleted(result);
+            return await Task.Factory.StartNew(finishChunksJob);
         }
     }
 }

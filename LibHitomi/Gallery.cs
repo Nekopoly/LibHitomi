@@ -136,7 +136,7 @@ namespace LibHitomi
         public GalleryCrawlMethod GalleryCrawlMethod { get; internal set; }
         [JsonIgnore()]
         public string[] ThumbnailUrls { get { return getThumbnailUrls(); } }
-
+        
         // Public methods
         public string[] getImageUrls()
             => GetImageUrls(this.id);

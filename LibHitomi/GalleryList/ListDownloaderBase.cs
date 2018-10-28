@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 using System.Xml;
 using Debug = System.Diagnostics.Debug;
 
-namespace LibHitomi
+namespace LibHitomi.GalleryList
 {
     public class ListDownloaderBase
     {
