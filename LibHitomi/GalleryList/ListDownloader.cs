@@ -79,6 +79,20 @@ namespace LibHitomi.GalleryList
         private IEnumerable<Gallery> finishChunksJob()
         {
             Debug.WriteLine("Finishing Thread #" + Thread.CurrentThread.ManagedThreadId + " Started");
+            while(chunks.Keys.Count != chunkCnt)
+            {
+                for (var i = 0; i < chunkCnt; i++)
+                {
+                    if (!chunks.ContainsKey(i))
+                    {
+                        Debug.WriteLine($"{i}st chunk not found. getting...");
+                        Task<Gallery[]> task = getChunk(i);
+                        task.Wait();
+                        chunks[i] = task.Result;
+                        Debug.WriteLine($"Got {i}st chunk");
+                    }
+                }
+            }
             ListDownloadProgress(ListDownloadProgressType.FinishingStarted, null);
             int totalCount = 0;
             for (var i = 0; i < chunkCnt; i++)

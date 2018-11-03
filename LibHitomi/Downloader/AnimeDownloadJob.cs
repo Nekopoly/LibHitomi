@@ -17,6 +17,7 @@ namespace LibHitomi.Downloader
         private bool isStarted = false;
         private string directoryPath;
         private Thread thread;
+        private DownloadFilenameGenerator filenameGenerator;
         // Properties
         public Gallery Gallery { get { return gallery; } }
         public bool IsCompleted { get { return isCompleted; } }
@@ -24,21 +25,18 @@ namespace LibHitomi.Downloader
         public bool IsDownloading { get { return isStarted && !isCompleted; } }
         public int JobId { get; set; } = -1;
         // Events
-        public event DownloadCompletedDelegate DownloadCompleted;
         public event DownloadProgressDelegate DownloadProgress;
         // Private methods
-        private void downloadAnime()
+        private async Task downloadAnime()
         {
             string url = gallery.getDownloadableVideoUrl();
             if (!Directory.Exists(directoryPath))
                 Directory.CreateDirectory(directoryPath);
-            string filePath = gallery.VideoFilename;
-            foreach (char i in Path.GetInvalidFileNameChars())
-                filePath = filePath.Replace(i, '_');
+            string filePath = filenameGenerator(gallery, gallery.VideoFilename, -1);
             filePath = Path.Combine(directoryPath, filePath);
 
             HttpWebRequest wreq = RequestHelper.CreateRequest(url);
-            using (WebResponse wres = wreq.GetResponse())
+            using (WebResponse wres = await wreq.GetResponseAsync())
             using (Stream str = wres.GetResponseStream())
             using (FileStream fstr = new FileStream(filePath, FileMode.Create, FileAccess.Write))
             {
@@ -54,10 +52,9 @@ namespace LibHitomi.Downloader
                 }
             }
             isCompleted = true;
-            DownloadCompleted(this);
         }
         // Public methods
-        public void Initialize(Gallery gallery, int imageLimit, string directory)
+        public void Initialize(Gallery gallery, string directory, DownloadFilenameGenerator filenameGenerator)
         {
             if (this.gallery == null)
                 this.gallery = gallery;
@@ -66,15 +63,15 @@ namespace LibHitomi.Downloader
             foreach (char i in Path.GetInvalidPathChars())
                 directory = directory.Replace(i, '_');
             this.directoryPath = directory;
+            this.filenameGenerator = filenameGenerator;
         }
-        public void StartDownload()
+        public async Task DownloadAsync()
         {
             if (isStarted)
                 throw new InvalidOperationException("이미 다운로드를 시작했습니다");
             isStarted = true;
             DownloadProgress(this, ProgressEventTypes.SetProrgessBarMaximum, 100000);
-            thread = new Thread(downloadAnime);
-            thread.Start();
+            await downloadAnime();
         }
     }
 }

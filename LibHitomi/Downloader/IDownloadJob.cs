@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 namespace LibHitomi.Downloader
 {
     internal delegate void DownloadProgressDelegate(object sender, ProgressEventTypes evtType, object param);
-    internal delegate void DownloadCompletedDelegate(object sender);
     public enum ProgressEventTypes
     {
         /// <summary>
@@ -29,14 +28,13 @@ namespace LibHitomi.Downloader
     }
     internal interface IDownloadJob
     {
-        void Initialize(Gallery gallery, int imageLimit, string directory);
-        void StartDownload();
+        void Initialize(Gallery gallery, string directory, DownloadFilenameGenerator filenameGenerator);
+        Task DownloadAsync();
         int JobId { get; set; }
         bool IsStarted { get; }
         bool IsDownloading { get; }
         bool IsCompleted { get; }
         Gallery Gallery { get; }
-        event DownloadCompletedDelegate DownloadCompleted;
         event DownloadProgressDelegate DownloadProgress;
     }
 }

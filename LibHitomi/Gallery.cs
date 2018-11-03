@@ -46,7 +46,7 @@ namespace LibHitomi
         // Static Members
         private static string[] getImageNumbs(int galleryId)
         {
-            HttpWebRequest wreq = RequestHelper.CreateRequest("", $"/galleries/{galleryId}.js");
+            HttpWebRequest wreq = RequestHelper.CreateRequest(DownloadOptions.GalleryImageUrlsSubdomain, $"/galleries/{galleryId}.js");
             string responseText;
             List<string> urls = new List<string>();
             // request
@@ -148,7 +148,7 @@ namespace LibHitomi
             => RequestHelper.CreateRequest(getThumbnailUrls()[index]).GetResponse().GetResponseStream();
 
         public string getDownloadableVideoUrl()
-            => RequestHelper.CreateUrl(RequestHelper.GalleryIdToImageSubdoamin(this.Id), $"/videos/{this.videoFilename}");
+            => RequestHelper.CreateUrl("a", $"/videos/{this.videoFilename}");
 
         public string getStreamingVideoUrl()
             => RequestHelper.CreateUrl(DownloadOptions.VideoStreamingSubdomain, $"/videos/{this.videoFilename}");

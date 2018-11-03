@@ -17,7 +17,7 @@ namespace LibHitomi.Test
 
         ListDownloader listDownloader;
         [Fact]
-        public async void ListDownloadAndInfoTest()
+        public async void ListDownloadTest()
         {
             // Downlad galleries
             listDownloader = new ListDownloader();
