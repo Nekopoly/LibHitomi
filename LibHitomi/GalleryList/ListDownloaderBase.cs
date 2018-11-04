@@ -17,17 +17,36 @@ namespace LibHitomi.GalleryList
     {
         protected string searchlibUrl = RequestHelper.CreateUrl(DownloadOptions.JsonSubdomain, "/searchlib.js");
         protected Regex jsonCountPattern = new Regex("number_of_gallery_jsons\\s?=\\s?([0-9]+)");
-        protected int getJsonCount()
+        protected int getJsonCount(int retry = 0)
         {
-            HttpWebRequest wreq = RequestHelper.CreateRequest(searchlibUrl);
-            using (Stream str = wreq.GetResponse().GetResponseStream())
-            using (StreamReader sre = new StreamReader(str))
+            if (retry >= 3)
             {
-                string res = sre.ReadToEnd();
-                Match match = jsonCountPattern.Match(res);
-                return int.Parse(match.Groups[1].Value);
+                throw new Exception("getJsonCount failed three times");
+            }
+            try
+            {
+                HttpWebRequest wreq = RequestHelper.CreateRequest(searchlibUrl);
+                using (Stream str = wreq.GetResponse().GetResponseStream())
+                using (StreamReader sre = new StreamReader(str))
+                {
+                    string res = sre.ReadToEnd();
+                    Match match = jsonCountPattern.Match(res);
+                    return int.Parse(match.Groups[1].Value);
+                }
+            }
+            catch (Exception)
+            {
+                Thread.Sleep(FetchRetryDelay);
+                return getJsonCount(++retry);
             }
         }
+        /// <summary xml:lang="ko">
+        /// 청크 다운로드 재시도시의 간격입니다. 밀리세컨드입니다.
+        /// </summary>
+        /// <summary>
+        /// Delay when retrying to download chunk in milliseconds
+        /// </summary>
+        public int FetchRetryDelay { get; set; } = 100;
         /// <summary xml:lang="ko">
         /// RSS를 읽어 가장 최근에 올라온 갤러리의 작품 ID를 반환합니다.
         /// </summary>

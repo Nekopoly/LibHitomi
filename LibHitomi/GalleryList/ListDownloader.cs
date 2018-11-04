@@ -10,6 +10,7 @@ using System.Net;
 using Newtonsoft.Json;
 using System.Xml;
 using Debug = System.Diagnostics.Debug;
+using System.Collections.Concurrent;
 
 namespace LibHitomi.GalleryList
 {
@@ -53,46 +54,43 @@ namespace LibHitomi.GalleryList
     /// </summary>
     public class ListDownloader : ListDownloaderBase
     {
-        private Dictionary<int, Gallery[]> chunks = new Dictionary<int, Gallery[]>();
+        private Gallery[][] chunks;
         private bool isDownloading = false;
         private int chunkCnt = 0;
         public ListDownloader()
         {
             ListDownloadProgress += (a, b) => { };
         }
-        private async Task<Gallery[]> getChunk(int i, bool raiseEvent = false)
+        private async Task<Gallery[]> getChunk(int i, bool raiseEvent = false, int retry = 0)
         {
-            if (raiseEvent) ListDownloadProgress(ListDownloadProgressType.DownloadingChunkStarted, i);
-            HttpWebRequest wreq = RequestHelper.CreateRequest(DownloadOptions.JsonSubdomain, $"/galleries{i}.json");
-            using (WebResponse wres = await wreq.GetResponseAsync())
-            using (Stream str = wres.GetResponseStream())
-            using (StreamReader sre = new StreamReader(str))
-            using (JsonReader reader = new JsonTextReader(sre))
+            if (retry >= 3)
             {
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.NullValueHandling = NullValueHandling.Ignore;
-                Gallery[] result = serializer.Deserialize<Gallery[]>(reader);
-                if (raiseEvent) ListDownloadProgress(ListDownloadProgressType.DownloadedChunk, i);
-                return result;
+                throw new Exception($"getChunk({i}st chunk) failed three times.");
+            }
+            try
+            {
+                if (raiseEvent) ListDownloadProgress(ListDownloadProgressType.DownloadingChunkStarted, i);
+                HttpWebRequest wreq = RequestHelper.CreateRequest(DownloadOptions.JsonSubdomain, $"/galleries{i}.json");
+                using (WebResponse wres = await wreq.GetResponseAsync())
+                using (Stream str = wres.GetResponseStream())
+                using (StreamReader sre = new StreamReader(str))
+                using (JsonReader reader = new JsonTextReader(sre))
+                {
+                    JsonSerializer serializer = new JsonSerializer();
+                    serializer.NullValueHandling = NullValueHandling.Ignore;
+                    Gallery[] result = serializer.Deserialize<Gallery[]>(reader);
+                    if (raiseEvent) ListDownloadProgress(ListDownloadProgressType.DownloadedChunk, i);
+                    return result;
+                }
+            } catch (Exception)
+            {
+                await Task.Delay(FetchRetryDelay);
+                return await getChunk(i, raiseEvent, ++retry);
             }
         }
         private IEnumerable<Gallery> finishChunksJob()
         {
             Debug.WriteLine("Finishing Thread #" + Thread.CurrentThread.ManagedThreadId + " Started");
-            while(chunks.Keys.Count != chunkCnt)
-            {
-                for (var i = 0; i < chunkCnt; i++)
-                {
-                    if (!chunks.ContainsKey(i))
-                    {
-                        Debug.WriteLine($"{i}st chunk not found. getting...");
-                        Task<Gallery[]> task = getChunk(i);
-                        task.Wait();
-                        chunks[i] = task.Result;
-                        Debug.WriteLine($"Got {i}st chunk");
-                    }
-                }
-            }
             ListDownloadProgress(ListDownloadProgressType.FinishingStarted, null);
             int totalCount = 0;
             for (var i = 0; i < chunkCnt; i++)
@@ -114,12 +112,15 @@ namespace LibHitomi.GalleryList
             Debug.WriteLine("Unnulled, Completed and Finished!");
             return list.AsEnumerable();
         }
-        private async Task downloadChunkJob(object _index)
+        private async Task downloadChunkJob(int index)
         {
-            int index = (int)_index;
             Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + ", Working with " + index + "st chunk(zero-based)");
-            var chunk = await getChunk(index, true);
-            chunks.Add(index, chunk);
+            Gallery[] chunk = null;
+            while(chunk == null)
+            {
+                chunk = await getChunk(index, true);
+            }
+            chunks[index] = chunk;
             Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + "," + index + "st chunk(zero-based) has " + chunk.Count() + " galleries and it's added");
             return;
         }
@@ -145,6 +146,13 @@ namespace LibHitomi.GalleryList
         /// </summary>
         public string ExtraGalleriesPath { get; set; } = "";
         /// <summary xml:lang="ko">
+        /// 청크 다운로드간의 딜레이입니다.
+        /// </summary>
+        /// <summary>
+        /// Delay between chunk downloads
+        /// </summary>
+        public int ChunkFetchDelay { get; set; } = 100;
+        /// <summary xml:lang="ko">
         /// 갤러리 목록 다운로드를 시작합니다. 여러개의 쓰레드를 사용하며 완료시 이벤트를 발생시킵니다.
         /// </summary>
         /// <summary>
@@ -164,11 +172,12 @@ namespace LibHitomi.GalleryList
             chunkCnt = getJsonCount();
             ListDownloadProgress(ListDownloadProgressType.GotTotalChunkCount, chunkCnt);
             Debug.WriteLine("Gallery Json Chunk Count : " + chunkCnt);
-            chunks.Clear();
             Task[] tasks = new Task[chunkCnt];
+            chunks = new Gallery[chunkCnt][];
             for(var i = 0; i < chunkCnt; i++)
             {
                 tasks[i] = downloadChunkJob(i);
+                await Task.Delay(ChunkFetchDelay);
             }
             await Task.WhenAll(tasks);
             return await Task.Factory.StartNew(finishChunksJob);
