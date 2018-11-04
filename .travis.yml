@@ -1,7 +1,6 @@
 language: csharp
-dist: bionic
 mono: none
-dotnet: 2.1.4
+dotnet: 2.1
 
 install:
 - dotnet restore
