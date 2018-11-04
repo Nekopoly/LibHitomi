@@ -119,6 +119,7 @@ namespace LibHitomi.GalleryList
             while(chunk == null)
             {
                 chunk = await getChunk(index, true);
+                if (chunk == null) await Task.Delay(FetchRetryDelay);
             }
             chunks[index] = chunk;
             Debug.WriteLine("Thread #" + Thread.CurrentThread.ManagedThreadId + "," + index + "st chunk(zero-based) has " + chunk.Count() + " galleries and it's added");
@@ -151,7 +152,7 @@ namespace LibHitomi.GalleryList
         /// <summary>
         /// Delay between chunk downloads
         /// </summary>
-        public int ChunkFetchDelay { get; set; } = 100;
+        public int ChunkFetchDelay { get; set; } = 50;
         /// <summary xml:lang="ko">
         /// 갤러리 목록 다운로드를 시작합니다. 여러개의 쓰레드를 사용하며 완료시 이벤트를 발생시킵니다.
         /// </summary>

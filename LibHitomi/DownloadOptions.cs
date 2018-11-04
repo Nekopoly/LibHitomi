@@ -76,17 +76,17 @@ namespace LibHitomi
         {
             ServicePointManager.ReusePort = true;
             ServicePointManager.SecurityProtocol =  SecurityProtocolType.Tls12;
-            HttpWebRequest req = HttpWebRequest.CreateHttp(uri) as HttpWebRequest;
+            HttpWebRequest req = HttpWebRequest.CreateHttp(uri);
             req.Accept = "text/*;video/*;image/*;*/*";
             req.KeepAlive = true;
             req.Method = "GET";
             req.Pipelined = true;
             req.Referer = "https://hitomi.la";
-            req.ServicePoint.ConnectionLimit = 10000;
-            req.ServicePoint.Expect100Continue = false;
             req.UserAgent = "Mozilla / 5.0(Windows NT 10.0; Win64; x64; rv: 63.0) Gecko / 20100101 Firefox / 63.0";
             req.AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip;
-            if(DownloadOptions.DefaultProxy != null)
+            req.ServicePoint.ConnectionLimit = 10000;
+            req.ServicePoint.Expect100Continue = false;
+            if (DownloadOptions.DefaultProxy != null)
             {
                 req.Proxy = DownloadOptions.DefaultProxy;
             }

@@ -17,7 +17,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;SupportIdSelectQuery SupportDebugQuery</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
@@ -39,10 +39,11 @@
     <Description>A library about hitomi.la</Description>
     <Copyright>Copyright (C) 2017 LiteHell</Copyright>
     <PackageLicenseUrl>https://mit-license.org/</PackageLicenseUrl>
-    <Version>1.0.2</Version>
+    <Version>2.0.0-alpha</Version>
     <NeutralLanguage>ko-KR</NeutralLanguage>
-    <AssemblyVersion>1.0.2.0</AssemblyVersion>
-    <FileVersion>1.0.2.0</FileVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
+    <PackageProjectUrl>https://github.com/LiteHell/LibHitomi</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
     <None Include="HitomiSharp-SigningKey.snk" />
