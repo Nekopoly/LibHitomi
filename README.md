@@ -1,4 +1,4 @@
-# LibHitomi
+# LibHitomi ![Build](https://api.travis-ci.org/LiteHell/LibHitomi.svg?branch=master)
 [히토미](https://hitomi.la)를 씹고 뜯고 맛보고 즐기기 위해 만든 라이브러리. 꽤 오랫동안 비공개로 개발하다가 공개함.
 
 # 문서
