@@ -31,7 +31,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>HitomiSharp-SigningKey.snk</AssemblyOriginatorKeyFile>
@@ -44,6 +44,7 @@
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <FileVersion>2.0.0.0</FileVersion>
     <PackageProjectUrl>https://github.com/LiteHell/LibHitomi</PackageProjectUrl>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
   <ItemGroup>
     <None Include="HitomiSharp-SigningKey.snk" />
